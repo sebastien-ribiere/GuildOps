@@ -42,6 +42,8 @@ public static class RefusalMessages
         RefusalReason.MissionsAlreadyEngaged => "Impossible de régénérer le tableau : une mission a déjà été engagée aujourd'hui.",
         RefusalReason.UnknownComplaint => "Réclamation inconnue.",
         RefusalReason.ComplaintNotOpen => "Cette réclamation est déjà close ou expirée.",
+        RefusalReason.NoPreparationTrait => "Ce héros n'a pas de trait de préparation.",
+        RefusalReason.AlreadyPrepared => "Cette catégorie est déjà préparée par ce héros.",
         _ => reason.ToString(),
     };
 }
@@ -51,8 +53,13 @@ public sealed record AssignmentCheck(
     bool CanAssign,
     IReadOnlyList<RefusalReason> Reasons,
     int EngagementCostCopper,
-    ChanceBreakdown? Chance)
+    ChanceBreakdown? Chance,
+    int EnergyCost = 0,
+    int RewardCopper = 0,
+    IReadOnlyList<string>? TraitNotes = null)
 {
+    /// <summary>Effets de trait actifs (ou en attente d'une condition) pour cette affectation, avant engagement.</summary>
+    public IReadOnlyList<string> Notes => TraitNotes ?? [];
     public string Message => string.Join(" ; ", Reasons.Select(RefusalMessages.For));
 }
 
@@ -97,7 +104,10 @@ public sealed record ComplaintOutcome(
     int CostPaidCopper,
     int ReputationBefore,
     int ReputationAfter,
-    string Message)
+    string Message,
+    int TraitBonus = 0)
 {
     public int ReputationDelta => ReputationAfter - ReputationBefore;
 }
+
+public sealed record PreparationOutcome(string HeroId, QuestCategory Category, int EnergySpent, int CopperSpent, string Message);

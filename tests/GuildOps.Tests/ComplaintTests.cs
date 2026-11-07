@@ -8,9 +8,9 @@ namespace GuildOps.Tests;
 public class StoryletDataTests
 {
     [Fact]
-    public void Initial_slice_has_exactly_the_two_decided_storylets()
+    public void Catalogue_has_the_eight_storylets_and_keeps_the_two_decided_ones()
     {
-        Assert.Equal(["E01", "E02"], Data.Storylets.Select(s => s.Id).OrderBy(x => x, StringComparer.Ordinal));
+        Assert.Equal(["E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08"], Data.Storylets.Select(s => s.Id).OrderBy(x => x, StringComparer.Ordinal));
         var e01 = Data.Storylets.Single(s => s.Id == "E01");
         var e02 = Data.Storylets.Single(s => s.Id == "E02");
         Assert.Equal((40, 80), (e01.ProbabilityPercent, e01.RepairCostCopper));
@@ -89,7 +89,7 @@ public class StorySelectionTests
     {
         var extra = new Storylet("E50", "Nouveau", "texte", 1, 100, new StoryletConditions(OutcomeFilter.Success, ["hermine-secops"], [], []), 33, new ChoiceLabels("r", "a", "d"));
         var data = Data with { Storylets = [.. Data.Storylets, extra] };
-        var s = GameSession.Start(data, Seed);
+        var s = GameSession.Start(data, Seed, traits: new NoTraitEffects());
         var offer = Inject(s, "bandits-de-la-route");
         s.Assign(offer.Id, "hermine-secops");
         // le moteur est inchangé : seul le catalogue a un élément de plus

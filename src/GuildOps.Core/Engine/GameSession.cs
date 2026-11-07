@@ -30,9 +30,10 @@ public sealed class GameSession
         Guild = null!;
     }
 
+    /// <param name="traits">Effets de traits ; par défaut le catalogue V0 (<see cref="NoTraitEffects"/> pour les désactiver).</param>
     public static GameSession Start(GameData data, long seed, Func<long, ISeededRandom>? rngFactory = null, ITraitEffects? traits = null)
     {
-        var session = new GameSession(data, seed, rngFactory ?? (s => new SeededRandom(s)), traits ?? new NoTraitEffects());
+        var session = new GameSession(data, seed, rngFactory ?? (s => new SeededRandom(s)), traits ?? TraitCatalog.Default);
         session.Initialize();
         return session;
     }
@@ -98,15 +99,32 @@ public sealed class GameSession
         var reasons = new List<RefusalReason>();
         if (offer.State != OfferState.Available) reasons.Add(RefusalReason.OfferNotAvailable);
         if (Guild.MissionsAcceptedToday >= Data.Rules.MaxMissionsPerDay) reasons.Add(RefusalReason.DailyLimitReached);
-        reasons.AddRange(AssignmentRules.Evaluate(Data.Rules, hero, offer.Template, Guild.TreasuryCopper));
+
+        var trait = _traits.For(hero.Definition);
+        var engagement = TraitMath.EngagementCost(Data.Rules, trait, hero, offer.Template);
+        var energyCost = TraitMath.EnergyCost(trait, hero, offer.Template);
+        reasons.AddRange(AssignmentRules.Evaluate(Data.Rules, hero, offer.Template, Guild.TreasuryCopper, engagement, energyCost));
 
         // La probabilité n'a de sens que si le niveau est admissible (le bonus de niveau n'est jamais négatif).
         ChanceBreakdown? chance = hero.Definition.Level >= offer.Template.MinLevel
             ? SuccessChance.Compute(Data.Rules, offer.Template.Category, hero.Definition.Level, offer.Template.MinLevel,
-                _traits.SuccessModifierPp(hero.Definition, offer.Template), hero.Energy, offer.Template.EnergyCost)
+                TraitMath.ChancePp(trait, hero, offer.Template), hero.Energy, energyCost)
             : null;
 
-        return new AssignmentCheck(reasons.Count == 0, reasons, AssignmentRules.EngagementCost(Data.Rules, hero, offer.Template), chance);
+        return new AssignmentCheck(reasons.Count == 0, reasons, engagement, chance,
+            energyCost, TraitMath.Reward(trait, hero, offer.Template), TraitNotes(trait, hero, offer.Template));
+    }
+
+    private static List<string> TraitNotes(TraitDefinition? trait, Hero hero, QuestTemplate quest)
+    {
+        var notes = new List<string>();
+        if (trait is null) return notes;
+        foreach (var m in trait.Modifiers.Where(m => m.Categories.Count == 0 || m.Categories.Contains(quest.Category)))
+        {
+            var active = TraitMath.ConditionMet(m.Condition, hero, quest.Category);
+            notes.Add($"{(active ? "Actif" : "Inactif")} : {TraitMath.Describe(m)}");
+        }
+        return notes;
     }
 
     public Result<Quest> Assign(string offerId, string heroId)
@@ -139,18 +157,22 @@ public sealed class GameSession
         var rules = Data.Rules;
         var hero = _heroes.First(h => h.Id == quest.HeroId);
         var template = quest.Template;
+        var trait = _traits.For(hero.Definition);
+        var energyCost = TraitMath.EnergyCost(trait, hero, template);
         var chance = SuccessChance.Compute(rules, template.Category, hero.Definition.Level, template.MinLevel,
-            _traits.SuccessModifierPp(hero.Definition, template), hero.Energy, template.EnergyCost);
+            TraitMath.ChancePp(trait, hero, template), hero.Energy, energyCost);
 
         var roll = _rng.NextInt(SuccessFormula.RollRange);
         var success = roll < chance.Final;
         var isCommunity = template.Category == QuestCategory.Corvee;
 
         // Mutations : énergie débitée une fois, prime versée une fois et seulement en cas de succès.
-        hero.Energy -= template.EnergyCost;
+        hero.Energy -= energyCost;
         hero.AssignedQuestId = null;
+        var rewardDue = TraitMath.Reward(trait, hero, template);
         quest.State = success ? QuestState.Succeeded : QuestState.Failed;
-        var reward = success ? template.RewardCopper : 0;
+        var reward = success ? rewardDue : 0;
+        hero.RecordMission(template.Category);
         Guild.Credit(reward);
         if (success) Guild.MissionsSucceeded++;
 
@@ -163,13 +185,14 @@ public sealed class GameSession
 
         Log(GameEventType.MissionResolved,
             $"{hero.Definition.Name} {(success ? "réussit" : "échoue")} « {template.Title} » (tirage {roll} / chance {chance.Final} %) : " +
-            $"{(success ? $"prime {Money(reward)}" : "aucune prime")}, énergie -{template.EnergyCost}.");
+            $"{(success ? $"prime {Money(reward)}" : "aucune prime")}, énergie -{energyCost}.");
         Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({delta:+#;-#;0}) : {reason}.");
+        ShareRecovery(trait, hero);
 
-        var incident = TryTriggerIncident(quest, hero, success);
+        var incident = TryTriggerIncident(quest, hero, success, TraitMath.IncidentPp(trait, hero, template));
 
         return Result<MissionOutcome>.Success(new MissionOutcome(
-            quest.Id, hero.Id, success, roll, chance.Final, reward, template.EnergyCost, before, after, reason, incident));
+            quest.Id, hero.Id, success, roll, chance.Final, reward, energyCost, before, after, reason, incident));
     }
 
     /// <summary>
@@ -258,9 +281,11 @@ public sealed class GameSession
     }
 
     // Ordre du contrat : mission résolue (prime, énergie, réputation) → dommage collatéral et sa réputation → ouverture du dossier.
-    private IncidentReport? TryTriggerIncident(Quest quest, Hero hero, bool success)
+    private IncidentReport? TryTriggerIncident(Quest quest, Hero hero, bool success, int incidentBonusPp)
     {
-        var storylet = StoryletSelector.Select(Data.Storylets, new MissionContext(hero.Id, quest.Template, success), _rng);
+        var resolvedToday = _quests.Count(q => q.State != QuestState.Assigned && q.Offer.Day == Guild.Day);
+        var context = new MissionContext(hero.Id, quest.Template, success, Guild.Reputation, Guild.TreasuryCopper, resolvedToday);
+        var storylet = StoryletSelector.Select(Data.Storylets, context, _rng, incidentBonusPp);
         if (storylet is null) return null;
 
         var rules = Data.Rules;
@@ -281,6 +306,20 @@ public sealed class GameSession
         ComplaintChoice.Apologize => Data.Rules.Deltas.Apology,
         _ => Data.Rules.Deltas.DenyComplaint,
     };
+
+    private int TraitBonusFor(Complaint complaint, ComplaintChoice choice)
+    {
+        if (choice == ComplaintChoice.Deny) return 0;
+        var heroId = _quests.First(q => q.Id == complaint.QuestId).HeroId;
+        return TraitMath.ComplaintBonus(_traits.For(_heroes.First(h => h.Id == heroId).Definition));
+    }
+
+    /// <summary>Requête pure : points de réputation supplémentaires que le trait du héros concerné apporte à ce choix.</summary>
+    public int ComplaintTraitBonus(string complaintId, ComplaintChoice choice)
+    {
+        var complaint = _complaints.FirstOrDefault(c => c.Id == complaintId);
+        return complaint is null ? 0 : TraitBonusFor(complaint, choice);
+    }
 
     /// <summary>Requête pure : raisons de refus d'un choix sur une réclamation (liste vide si faisable).</summary>
     public IReadOnlyList<RefusalReason> ComplaintCheck(string complaintId, ComplaintChoice choice)
@@ -307,7 +346,8 @@ public sealed class GameSession
         var cost = choice == ComplaintChoice.Repair ? complaint.RepairCostCopper : 0;
         Guild.Debit(cost);
         var before = Guild.Reputation;
-        var after = Guild.ApplyReputation(DeltaFor(choice), rules.ReputationMin, rules.ReputationMax);
+        var bonus = TraitBonusFor(complaint, choice);
+        var after = Guild.ApplyReputation(DeltaFor(choice) + bonus, rules.ReputationMin, rules.ReputationMax);
         complaint.State = ComplaintState.Resolved;
         complaint.Choice = choice;
 
@@ -317,10 +357,10 @@ public sealed class GameSession
             ComplaintChoice.Apologize => complaint.Storylet.Labels.Apologize,
             _ => complaint.Storylet.Labels.Deny,
         };
-        var message = $"Réclamation {complaint.Id} close : {label} (coût {Money(cost)}).";
+        var message = $"Réclamation {complaint.Id} close : {label} (coût {Money(cost)}{(bonus != 0 ? $", trait du héros {bonus:+#;-#} réputation" : "")}).";
         Log(GameEventType.ComplaintResolved, message);
         Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : réclamation {complaint.Id}.");
-        return Result<ComplaintOutcome>.Success(new ComplaintOutcome(complaint.Id, choice, cost, before, after, message));
+        return Result<ComplaintOutcome>.Success(new ComplaintOutcome(complaint.Id, choice, cost, before, after, message, bonus));
     }
 
     private void ExpireComplaints(int endedDay)
@@ -335,6 +375,53 @@ public sealed class GameSession
             Log(GameEventType.ComplaintExpired, $"Réclamation {complaint.Id} restée sans réponse : traitée comme un refus.");
             Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : réclamation {complaint.Id} expirée.");
         }
+    }
+
+    private void ShareRecovery(TraitDefinition? trait, Hero resolver)
+    {
+        var amount = TraitMath.TeamRecovery(trait);
+        if (amount <= 0) return;
+        foreach (var other in _heroes.Where(h => h.Id != resolver.Id)) other.Energy = Math.Min(Data.Rules.MaxEnergy, other.Energy + amount);
+        Log(GameEventType.EnergyRecovered, $"{resolver.Definition.Name} coordonne l'équipe : chaque autre aventurier récupère jusqu'à {amount} points d'énergie.");
+    }
+
+    /// <summary>Requête pure : raisons de refus d'une préparation (liste vide si possible).</summary>
+    public IReadOnlyList<RefusalReason> PreparationCheck(string heroId, QuestCategory category)
+    {
+        if (Status == GameStatus.Finished) return [RefusalReason.GameFinished];
+        var hero = _heroes.FirstOrDefault(h => h.Id == heroId);
+        if (hero is null) return [RefusalReason.UnknownHero];
+        var preparation = _traits.For(hero.Definition)?.Preparation;
+        if (preparation is null) return [RefusalReason.NoPreparationTrait];
+        var reasons = new List<RefusalReason>();
+        if (!hero.IsFree) reasons.Add(RefusalReason.HeroBusy);
+        if (hero.IsPrepared(category)) reasons.Add(RefusalReason.AlreadyPrepared);
+        if (hero.Energy < preparation.EnergyCost) reasons.Add(RefusalReason.NotEnoughEnergy);
+        if (Guild.TreasuryCopper < preparation.CopperCost) reasons.Add(RefusalReason.NotEnoughTreasury);
+        return reasons;
+    }
+
+    /// <summary>Coût de préparation du héros (null s'il n'en a pas) : affichable avant de s'engager.</summary>
+    public TraitPreparation? PreparationCostFor(string heroId) =>
+        _heroes.FirstOrDefault(h => h.Id == heroId) is { } hero ? _traits.For(hero.Definition)?.Preparation : null;
+
+    /// <summary>
+    /// Investissement explicite (trait « observer puis automatiser ») : énergie et cuivres dépensés maintenant, bonus de chance
+    /// réutilisable sur toutes les missions de la catégorie. Ne compte pas comme une mission de la journée ; atomique.
+    /// </summary>
+    public Result<PreparationOutcome> Prepare(string heroId, QuestCategory category)
+    {
+        var reasons = PreparationCheck(heroId, category);
+        if (reasons.Count > 0) return Result<PreparationOutcome>.Refused(reasons);
+
+        var hero = _heroes.First(h => h.Id == heroId);
+        var cost = _traits.For(hero.Definition)!.Preparation!;
+        Guild.Debit(cost.CopperCost);
+        hero.Energy -= cost.EnergyCost;
+        hero.Prepare(category);
+        var message = $"{hero.Definition.Name} observe puis automatise la catégorie {category} (énergie -{cost.EnergyCost}, {Money(cost.CopperCost)}) : bonus réutilisable sur ses prochaines missions.";
+        Log(GameEventType.HeroPrepared, message);
+        return Result<PreparationOutcome>.Success(new PreparationOutcome(hero.Id, category, cost.EnergyCost, cost.CopperCost, message));
     }
 
     public string Money(int copper) => CurrencyFormat.Format(copper, Data.Rules.CopperPerGold);

@@ -1,6 +1,6 @@
 # GuildOps
 
-Jeu de gestion de guilde fantasy (Godot 4.7.2 .NET, C# / .NET 10), 100 % hors ligne. État : **Phase A — tranche verticale saine** (jour 1).
+Jeu de gestion de guilde fantasy (Godot 4.7.2 .NET, C# / .NET 10), 100 % hors ligne. État : **Phase B3** (7 jours, réclamations, 8 storylets, 12 traits actifs). Rapports : `docs/phase-*-report.md`.
 
 ## Structure
 - `src/GuildOps.Core` — moteur C# pur (aucune dépendance Godot). Données JSON embarquées depuis `game-data/`.

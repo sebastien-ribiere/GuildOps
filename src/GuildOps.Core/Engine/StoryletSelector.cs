@@ -3,11 +3,14 @@ using GuildOps.Core.Randomness;
 
 namespace GuildOps.Core.Engine;
 
-public sealed record MissionContext(string HeroId, QuestTemplate Template, bool Success);
+/// <summary>État connu au moment de la résolution (réputation et trésorerie APRÈS prime et réputation de mission).</summary>
+public sealed record MissionContext(
+    string HeroId, QuestTemplate Template, bool Success,
+    int Reputation = 0, int TreasuryCopper = int.MaxValue, int MissionsResolvedToday = 0);
 
 /// <summary>
 /// Choisit au plus UN storylet par mission. Les storylets éligibles sont parcourus par priorité décroissante puis par id ;
-/// chacun tire sa probabilité dans le flux seedé jusqu'au premier qui se déclenche. Aucun tirage n'est consommé sans storylet éligible.
+/// chacun tire sa probabilité (ajustée du bonus de trait du héros, bornée 0..100) dans le flux seedé jusqu'au premier qui se déclenche. Aucun tirage n'est consommé sans storylet éligible.
 /// </summary>
 public static class StoryletSelector
 {
@@ -19,13 +22,16 @@ public static class StoryletSelector
         if (c.HeroIds.Count > 0 && !c.HeroIds.Contains(m.HeroId)) return false;
         if (c.Categories.Count > 0 && !c.Categories.Contains(m.Template.Category)) return false;
         if (c.TemplateIds.Count > 0 && !c.TemplateIds.Contains(m.Template.Id)) return false;
+        if (c.MinReputation is { } minRep && m.Reputation < minRep) return false;
+        if (c.MaxTreasuryCopper is { } maxTreasury && m.TreasuryCopper > maxTreasury) return false;
+        if (m.MissionsResolvedToday < c.MinMissionsResolvedToday) return false;
         return true;
     }
 
-    public static Storylet? Select(IReadOnlyList<Storylet> storylets, MissionContext mission, ISeededRandom rng)
+    public static Storylet? Select(IReadOnlyList<Storylet> storylets, MissionContext mission, ISeededRandom rng, int probabilityBonusPp = 0)
     {
         foreach (var s in storylets.Where(x => Matches(x, mission)).OrderByDescending(x => x.Priority).ThenBy(x => x.Id, StringComparer.Ordinal))
-            if (rng.NextInt(100) < s.ProbabilityPercent) return s;
+            if (rng.NextInt(100) < Math.Clamp(s.ProbabilityPercent + probabilityBonusPp, 0, 100)) return s;
         return null;
     }
 }
