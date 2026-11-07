@@ -1,7 +1,7 @@
 {
   "schemaVersion": "0.1.0",
   "status": "proposition-non-validee",
-  "notes": "Deux storylets de la premiere tranche (E01 et E02 de docs/10). Probabilites, couts et delai d'expiration decides avec le formateur le 2026-11-07 (sessions de travail), non encore consignes dans le depot formateur. 'Le blason royal accroche a l'envers' est reserve au TP final et n'est PAS ici.",
+  "notes": "Huit storylets (E01 a E08 de docs/10). E01/E02 : probabilites, couts et delai d'expiration decides avec le formateur le 2026-11-07. E03 a E08 : PROPOSITIONS de Claude (Phase B3), non validees ; leurs textes, probabilites et couts sont a relire. 'Le blason royal accroche a l'envers' est reserve au TP final et n'est PAS ici. Conditions optionnelles : minReputation, maxTreasuryCopper, minMissionsResolvedToday (evaluees apres prime et reputation de mission).",
   "complaintExpiryDays": 2,
   "storylets": [
     {
@@ -12,8 +12,13 @@
       "probabilityPercent": 40,
       "conditions": {
         "outcome": "success",
-        "heroIds": [ "gerard-dev" ],
-        "categories": [ "corvee", "village" ],
+        "heroIds": [
+          "gerard-dev"
+        ],
+        "categories": [
+          "corvee",
+          "village"
+        ],
         "templateIds": []
       },
       "text": "Gérard a vaincu les rats. Et la cave. Et le mur porteur. La taverne réclame réparation.",
@@ -36,7 +41,9 @@
         "outcome": "failure",
         "heroIds": [],
         "categories": [],
-        "templateIds": [ "wifi-du-dragon" ]
+        "templateIds": [
+          "wifi-du-dragon"
+        ]
       },
       "text": "Le dragon a retrouvé le signal, mais pas son mot de passe. Son souffle a grillé le routeur, et il vous en tient responsable.",
       "incident": {
@@ -45,6 +52,147 @@
           "repair": "Rembourser le routeur",
           "apologize": "Présenter des excuses",
           "deny": "Nier : le dragon n'avait qu'à lire la notice"
+        }
+      }
+    },
+    {
+      "id": "E03",
+      "title": "La prime de conformité",
+      "trigger": "MissionResolved",
+      "priority": 12,
+      "probabilityPercent": 35,
+      "conditions": {
+        "outcome": "success",
+        "heroIds": [
+          "merlinda-qa"
+        ],
+        "categories": [],
+        "templateIds": []
+      },
+      "text": "Merlinda réclame une prime pour parfaite conformité au parchemin, tampons de sa grenouille à l'appui.",
+      "incident": {
+        "repairCostCopper": 60,
+        "labels": {
+          "repair": "Verser la prime de conformité",
+          "apologize": "Présenter des excuses : le parchemin était en retard",
+          "deny": "Refuser : la grenouille n'est pas assermentée"
+        }
+      }
+    },
+    {
+      "id": "E04",
+      "title": "L'audit des gobelins",
+      "trigger": "MissionResolved",
+      "priority": 8,
+      "probabilityPercent": 35,
+      "conditions": {
+        "outcome": "any",
+        "heroIds": [],
+        "categories": [],
+        "templateIds": [],
+        "maxTreasuryCopper": 300
+      },
+      "text": "La banque des gobelins constate votre caisse presque vide et propose un audit gratuit. Les suivants seront facturés.",
+      "incident": {
+        "repairCostCopper": 50,
+        "labels": {
+          "repair": "Payer l'audit tout de suite",
+          "apologize": "Présenter des excuses et demander un délai",
+          "deny": "Refuser : les gobelins bluffent"
+        }
+      }
+    },
+    {
+      "id": "E05",
+      "title": "Livraison avant-hier",
+      "trigger": "MissionResolved",
+      "priority": 5,
+      "probabilityPercent": 30,
+      "conditions": {
+        "outcome": "any",
+        "heroIds": [],
+        "categories": [],
+        "templateIds": [],
+        "minMissionsResolvedToday": 2
+      },
+      "text": "Votre publicité promet une exécution éclair. Le client exige une livraison avant-hier.",
+      "incident": {
+        "repairCostCopper": 40,
+        "labels": {
+          "repair": "Calmer le client avec un geste commercial",
+          "apologize": "Présenter des excuses pour la publicité",
+          "deny": "Nier : la publicité parlait d'hier"
+        }
+      }
+    },
+    {
+      "id": "E06",
+      "title": "Les portes éternuent",
+      "trigger": "MissionResolved",
+      "priority": 14,
+      "probabilityPercent": 40,
+      "conditions": {
+        "outcome": "success",
+        "heroIds": [
+          "archibald-platform"
+        ],
+        "categories": [],
+        "templateIds": []
+      },
+      "text": "Archibald a automatisé les portes du donjon. Elles s'ouvrent maintenant à chaque éternuement.",
+      "incident": {
+        "repairCostCopper": 70,
+        "labels": {
+          "repair": "Corriger l'automatisation",
+          "apologize": "Présenter des excuses : c'est une fonctionnalité",
+          "deny": "Nier : les portes fonctionnent comme prévu"
+        }
+      }
+    },
+    {
+      "id": "E07",
+      "title": "Le raccourci du tribunal",
+      "trigger": "MissionResolved",
+      "priority": 16,
+      "probabilityPercent": 50,
+      "conditions": {
+        "outcome": "failure",
+        "heroIds": [
+          "borborygme-release"
+        ],
+        "categories": [],
+        "templateIds": []
+      },
+      "text": "Borborygme a trouvé un raccourci. Le raccourci conduisait au tribunal royal, qui a de la suite dans les idées.",
+      "incident": {
+        "repairCostCopper": 90,
+        "labels": {
+          "repair": "Payer l'amende",
+          "apologize": "Présenter des excuses au greffier",
+          "deny": "Contester : le raccourci était balisé"
+        }
+      }
+    },
+    {
+      "id": "E08",
+      "title": "L'inspecteur et les justificatifs",
+      "trigger": "MissionResolved",
+      "priority": 6,
+      "probabilityPercent": 30,
+      "conditions": {
+        "outcome": "success",
+        "heroIds": [],
+        "categories": [],
+        "templateIds": [],
+        "minReputation": 60
+      },
+      "text": "L'inspecteur royal félicite la guilde… puis demande les justificatifs de chaque mission.",
+      "incident": {
+        "repairCostCopper": 50,
+        "labels": {
+          "repair": "Fournir un rapport complet",
+          "apologize": "Présenter des excuses et promettre une livraison ultérieure",
+          "deny": "Nier : les justificatifs sont dans le dragon"
         }
       }
     }

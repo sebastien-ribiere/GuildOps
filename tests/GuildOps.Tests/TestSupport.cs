@@ -26,7 +26,8 @@ internal static class TestSupport
 
     public static GameData Data { get; } = GameDataLoader.LoadEmbedded();
 
-    public static GameSession NewSession(long seed = Seed) => GameSession.Start(Data, seed);
+    /// <summary>Les tests de règles de base n'activent pas les traits ; ceux-ci ont leurs propres tests (<c>TraitTests</c>).</summary>
+    public static GameSession NewSession(long seed = Seed) => GameSession.Start(Data, seed, traits: new NoTraitEffects());
 
     /// <summary>Session dont les tirages de résolution sont forcés (la génération du jour 1 utilise le vrai RNG semé).</summary>
     public static GameSession NewSessionWithRolls(params int[] rolls) => NewSessionWithScript(out _, rolls);
@@ -34,7 +35,7 @@ internal static class TestSupport
     public static GameSession NewSessionWithScript(out ScriptedRandom script, params int[] rolls)
     {
         var rng = new OverridableRandom(new SeededRandom(Seed));
-        var session = GameSession.Start(Data, Seed, _ => rng);
+        var session = GameSession.Start(Data, Seed, _ => rng, new NoTraitEffects());
         script = new ScriptedRandom(rolls);
         rng.Override = script;
         return session;
@@ -45,7 +46,7 @@ internal static class TestSupport
     {
         var r = new OverridableRandom(new SeededRandom(Seed));
         rng = r;
-        return GameSession.Start(Data, Seed, _ => r);
+        return GameSession.Start(Data, Seed, _ => r, new NoTraitEffects());
     }
 
     /// <summary>Publie une offre arbitraire (cas que le tirage seedé ne produit pas).</summary>

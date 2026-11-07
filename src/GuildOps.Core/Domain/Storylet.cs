@@ -7,7 +7,10 @@ public sealed record StoryletConditions(
     OutcomeFilter Outcome,
     IReadOnlyList<string> HeroIds,
     IReadOnlyList<QuestCategory> Categories,
-    IReadOnlyList<string> TemplateIds);
+    IReadOnlyList<string> TemplateIds,
+    int? MinReputation = null,
+    int? MaxTreasuryCopper = null,
+    int MinMissionsResolvedToday = 0);
 
 public sealed record ChoiceLabels(string Repair, string Apologize, string Deny);
 

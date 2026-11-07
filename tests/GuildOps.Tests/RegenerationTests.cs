@@ -148,7 +148,7 @@ public class RegenerationTests
             File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "storylets.v0.1.json")));
-        var s = GameSession.Start(data, Seed);
+        var s = GameSession.Start(data, Seed, traits: new NoTraitEffects());
         Assert.Contains(RefusalReason.RegenerationDisabled, s.RegenerateOffers().Reasons);
     }
 

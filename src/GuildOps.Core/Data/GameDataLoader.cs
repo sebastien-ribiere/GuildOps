@@ -189,7 +189,7 @@ public static partial class GameDataLoader
                 ParseSkill(h.GetProperty("skill").GetString()!),
                 level, energy, cost,
                 // Divergence connue : le roster (traitId) et l'équilibrage (traitKey) utilisent deux identifiants différents.
-                // Les deux sont conservés tels quels ; aucun n'a d'effet mécanique en Phase A.
+                // Les deux sont conservés tels quels ; seul traitId (roster) pilote le catalogue de traits (TraitCatalog).
                 h.GetProperty("traitId").GetString()!, b.GetProperty("traitKey").GetString()!,
                 h.GetProperty("trait").GetString()!, h.GetProperty("advantage").GetString()!, h.GetProperty("drawback").GetString()!,
                 h.GetProperty("accessory").GetString()!, h.GetProperty("line").GetString()!));
@@ -197,6 +197,8 @@ public static partial class GameDataLoader
 
         if (heroes.Count != rules.HeroCount) throw new GameDataException($"{rules.HeroCount} héros attendus, {heroes.Count} trouvés.");
         if (heroes.Select(h => h.Id).Distinct().Count() != heroes.Count) throw new GameDataException("Identifiants de héros dupliqués.");
+        var unknownTrait = heroes.FirstOrDefault(h => !Engine.TraitCatalog.Contains(h.TraitId));
+        if (unknownTrait is not null) throw new GameDataException($"Héros « {unknownTrait.Id} » : trait « {unknownTrait.TraitId} » absent du catalogue de traits.");
         if (rosterById.Count != heroes.Count) throw new GameDataException("Le roster et l'équilibrage ne décrivent pas les mêmes héros.");
         return heroes;
     }
@@ -263,12 +265,16 @@ public static partial class GameDataLoader
 
             list.Add(new Storylet(id, e.GetProperty("title").GetString()!, e.GetProperty("text").GetString()!,
                 e.GetProperty("priority").GetInt32(), p,
-                new StoryletConditions(outcome, heroIds, c.GetProperty("categories").EnumerateArray().Select(x => ParseCategory(x.GetString()!)).ToList(), templateIds),
+                new StoryletConditions(outcome, heroIds, c.GetProperty("categories").EnumerateArray().Select(x => ParseCategory(x.GetString()!)).ToList(), templateIds,
+                    OptionalInt(c, "minReputation"), OptionalInt(c, "maxTreasuryCopper"), OptionalInt(c, "minMissionsResolvedToday") ?? 0),
                 cost, new ChoiceLabels(labels.GetProperty("repair").GetString()!, labels.GetProperty("apologize").GetString()!, labels.GetProperty("deny").GetString()!)));
         }
         if (list.Select(s => s.Id).Distinct().Count() != list.Count) throw new GameDataException("Identifiants de storylets dupliqués.");
         return (list, expiry);
     }
+
+    private static int? OptionalInt(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
 
     private static QuestCategory ParseCategory(string s) => s switch
     {

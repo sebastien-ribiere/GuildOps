@@ -23,6 +23,7 @@ public partial class Main : Control
     private RichTextLabel _detail = null!;
     private RichTextLabel _journal = null!;
     private Button _assignButton = null!;
+    private Button _prepareButton = null!;
     private Button _resolveButton = null!;
     private Button _endDayButton = null!;
     private Button _regenButton = null!;
@@ -77,6 +78,9 @@ public partial class Main : Control
         _assignButton = new Button { Text = "Affecter le héros à la quête" };
         _assignButton.Pressed += OnAssign;
         right.AddChild(_assignButton);
+        _prepareButton = new Button();
+        _prepareButton.Pressed += OnPrepare;
+        right.AddChild(_prepareButton);
 
         right.AddChild(new Label { Text = "Missions en cours / terminées" });
         _questList = new ItemList { CustomMinimumSize = new Vector2(0, 110) };
@@ -130,6 +134,15 @@ public partial class Main : Control
         var result = _session.Assign(_selectedOfferId, _selectedHeroId);
         _feedback.Text = result.Ok ? "Héros engagé. Résolvez la mission quand vous voulez." : "Refusé : " + result.Message;
         if (result.Ok) _selectedQuestId = result.Value!.Id;
+        Refresh();
+    }
+
+    private void OnPrepare()
+    {
+        var offer = _session.Offers.FirstOrDefault(o => o.Id == _selectedOfferId);
+        if (offer is null || _selectedHeroId is null) { _feedback.Text = "Choisissez un héros et une quête de la catégorie à préparer."; return; }
+        var result = _session.Prepare(_selectedHeroId, offer.Template.Category);
+        _feedback.Text = result.Ok ? result.Value!.Message : "Refusé : " + result.Message;
         Refresh();
     }
 
@@ -236,8 +249,8 @@ public partial class Main : Control
             var labels = selectedComplaint?.Storylet.Labels;
             button.Text = labels is null ? choice.ToString() : choice switch
             {
-                ComplaintChoice.Repair => $"{labels.Repair} ({_session.Money(selectedComplaint!.RepairCostCopper)})",
-                ComplaintChoice.Apologize => labels.Apologize,
+                ComplaintChoice.Repair => $"{labels.Repair} ({_session.Money(selectedComplaint!.RepairCostCopper)}){Bonus(selectedComplaint, choice)}",
+                ComplaintChoice.Apologize => labels.Apologize + Bonus(selectedComplaint!, choice),
                 _ => labels.Deny,
             };
             button.Disabled = selectedComplaint is null || _session.ComplaintCheck(selectedComplaint.Id, choice).Count > 0;
@@ -253,8 +266,24 @@ public partial class Main : Control
             ? "Renouveler le tableau (déjà utilisé)"
             : $"Renouveler le tableau (−{_session.Data.Rules.RegenerationReputationCost} réputation, une fois par partie)";
         _endDayButton.Text = _session.Guild.Day >= _session.Data.Rules.Days ? "Terminer la journée et passer au bilan royal" : "Terminer la journée";
+        var prepCost = _selectedHeroId is null ? null : _session.PreparationCostFor(_selectedHeroId);
+        _prepareButton.Visible = prepCost is not null;
+        if (prepCost is not null)
+        {
+            var category = offer?.Template.Category;
+            _prepareButton.Text = category is null
+                ? "Préparer une catégorie (sélectionnez d'abord une quête)"
+                : $"Préparer la catégorie {category} (énergie -{prepCost.EnergyCost}, {_session.Money(prepCost.CopperCost)})";
+            _prepareButton.Disabled = category is null || _session.PreparationCheck(_selectedHeroId!, category.Value).Count > 0;
+        }
         _assignButton.Disabled = finished || offer is null || _selectedHeroId is null || !_session.Preview(offer.Id, _selectedHeroId).CanAssign;
         _journal.Text = string.Join("\n", _session.Events.Select(e => $"#{e.Sequence} (J{e.Day}) {e.Message}"));
+    }
+
+    private string Bonus(Complaint complaint, ComplaintChoice choice)
+    {
+        var bonus = _session.ComplaintTraitBonus(complaint.Id, choice);
+        return bonus == 0 ? "" : $" [trait {bonus:+#;-#} réputation]";
     }
 
     private void RefreshDetail(QuestOffer? offer)
@@ -263,13 +292,14 @@ public partial class Main : Control
         var text = "";
         if (hero is not null)
             text += $"[b]{hero.Name}[/b] — {hero.Role}\nTrait : {hero.TraitText}\nAtout : {hero.TraitAdvantage}\nContrepartie : {hero.TraitDrawback}\n" +
-                    "[i](Phase A : les traits sont affichés mais n'ont pas encore d'effet chiffré.)[/i]\n\n";
+                    "\n";
         if (offer is not null)
             text += $"[b]{offer.Template.Title}[/b]\n{offer.Template.Description}\n\n";
         if (offer is not null && hero is not null)
         {
             var check = _session.Preview(offer.Id, hero.Id);
-            text += $"Coût d'engagement : {_session.Money(check.EngagementCostCopper)}\n";
+            text += $"Coût d'engagement : {_session.Money(check.EngagementCostCopper)} | énergie dépensée : {check.EnergyCost} | prime si succès : {_session.Money(check.RewardCopper)}\n";
+            foreach (var note in check.Notes) text += $"  • {note}\n";
             if (check.Chance is { } c)
                 text += $"Chance de réussite : [b]{c.Final} %[/b]  (base {c.Base} − risque {c.RiskPenalty} + niveau {c.LevelBonus:+#;-#;0} + trait {c.TraitModifier:+#;-#;0} − fatigue {c.LowEnergyPenalty})\n";
             text += check.CanAssign ? "[color=green]Affectation possible.[/color]" : $"[color=red]Impossible : {check.Message}[/color]";
