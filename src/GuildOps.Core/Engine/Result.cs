@@ -40,6 +40,8 @@ public static class RefusalMessages
         RefusalReason.RegenerationDisabled => "La régénération du tableau n'est pas activée dans les règles.",
         RefusalReason.RegenerationAlreadyUsed => "La régénération du tableau a déjà été utilisée dans cette partie.",
         RefusalReason.MissionsAlreadyEngaged => "Impossible de régénérer le tableau : une mission a déjà été engagée aujourd'hui.",
+        RefusalReason.UnknownComplaint => "Réclamation inconnue.",
+        RefusalReason.ComplaintNotOpen => "Cette réclamation est déjà close ou expirée.",
         _ => reason.ToString(),
     };
 }
@@ -64,7 +66,8 @@ public sealed record MissionOutcome(
     int EnergySpent,
     int ReputationBefore,
     int ReputationAfter,
-    string ReputationReason)
+    string ReputationReason,
+    IncidentReport? Incident = null)
 {
     public int ReputationDelta => ReputationAfter - ReputationBefore;
 }
@@ -78,8 +81,23 @@ public sealed record FinalReport(
     bool ReputationOk,
     bool TreasuryOk,
     bool MissionsOk,
-    string Message);
+    string Message,
+    int OpenComplaints);
 
 public sealed record DayTransition(int EndedDay, int? NewDay, IReadOnlyList<QuestOffer> NewOffers, FinalReport? Report);
 
 public sealed record Regeneration(int Day, IReadOnlyList<QuestOffer> NewOffers, int ReputationBefore, int ReputationAfter);
+
+/// <summary>Incident déclenché par une mission : l'événement narratif, le dommage collatéral et le dossier ouvert.</summary>
+public sealed record IncidentReport(string StoryletId, string Title, string Text, string ComplaintId, int CollateralReputationDelta);
+
+public sealed record ComplaintOutcome(
+    string ComplaintId,
+    ComplaintChoice Choice,
+    int CostPaidCopper,
+    int ReputationBefore,
+    int ReputationAfter,
+    string Message)
+{
+    public int ReputationDelta => ReputationAfter - ReputationBefore;
+}

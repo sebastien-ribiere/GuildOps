@@ -24,7 +24,8 @@ public sealed record SuccessFormula(
 }
 
 public sealed record ReputationDeltas(
-    int RegularSuccess, int CommunitySuccess, int RegularFailure, int CommunityFailure);
+    int RegularSuccess, int CommunitySuccess, int RegularFailure, int CommunityFailure,
+    int CollateralDamage, int PaidCompensation, int Apology, int DenyComplaint);
 
 /// <summary>Paramètres de jeu typés, issus de rules.v0.1.json. Aucun seuil n'est dupliqué ailleurs.</summary>
 public sealed record VictoryConditions(int MinTreasuryCopper, int MinReputation, int MinSucceededMissions);

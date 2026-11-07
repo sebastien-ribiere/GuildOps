@@ -26,6 +26,9 @@ public partial class Main : Control
     private Button _resolveButton = null!;
     private Button _endDayButton = null!;
     private Button _regenButton = null!;
+    private ItemList _complaintList = null!;
+    private readonly Button[] _complaintButtons = new Button[3];
+    private string? _selectedComplaintId;
     private Label _feedback = null!;
 
     public override void _Ready()
@@ -83,6 +86,21 @@ public partial class Main : Control
         _resolveButton.Pressed += OnResolve;
         right.AddChild(_resolveButton);
 
+        right.AddChild(new Label { Text = "Réclamations clients" });
+        _complaintList = new ItemList { CustomMinimumSize = new Vector2(0, 80) };
+        _complaintList.ItemSelected += i => { _selectedComplaintId = _session.Complaints[(int)i].Id; Refresh(); };
+        right.AddChild(_complaintList);
+        var complaintRow = new HBoxContainer();
+        right.AddChild(complaintRow);
+        foreach (var choice in Enum.GetValues<ComplaintChoice>())
+        {
+            var button = new Button { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+            var captured = choice;
+            button.Pressed += () => OnComplaint(captured);
+            _complaintButtons[(int)choice] = button;
+            complaintRow.AddChild(button);
+        }
+
         _regenButton = new Button();
         _regenButton.Pressed += OnRegenerate;
         right.AddChild(_regenButton);
@@ -124,6 +142,21 @@ public partial class Main : Control
         _feedback.Text = $"{(o.Success ? "SUCCÈS" : "ÉCHEC")} — tirage {o.Roll} pour {o.ChancePercent} % de chance. " +
                          $"Prime : {_session.Money(o.RewardPaidCopper)}. Énergie -{o.EnergySpent}. " +
                          $"Réputation {o.ReputationBefore} → {o.ReputationAfter} ({o.ReputationDelta:+#;-#;0}).";
+        if (o.Incident is { } incident)
+        {
+            _selectedComplaintId = incident.ComplaintId;
+            _feedback.Text += $"\nINCIDENT — {incident.Title} : {incident.Text} (dommage collatéral {incident.CollateralReputationDelta}). Une réclamation est ouverte.";
+        }
+        Refresh();
+    }
+
+    private void OnComplaint(ComplaintChoice choice)
+    {
+        if (_selectedComplaintId is null) { _feedback.Text = "Choisissez une réclamation."; return; }
+        var result = _session.ResolveComplaint(_selectedComplaintId, choice);
+        _feedback.Text = result.Ok
+            ? $"{result.Value!.Message} Réputation {result.Value.ReputationBefore} → {result.Value.ReputationAfter} ({result.Value.ReputationDelta:+#;-#;0})."
+            : "Refusé : " + result.Message;
         Refresh();
     }
 
@@ -186,6 +219,28 @@ public partial class Main : Control
             var hero = _session.Heroes.First(h => h.Id == q.HeroId).Definition.Name;
             _questList.AddItem($"{q.Template.Title} — {hero} — {q.State}");
             if (q.Id == _selectedQuestId) _questList.Select(i);
+        }
+
+        _complaintList.Clear();
+        for (var i = 0; i < _session.Complaints.Count; i++)
+        {
+            var c = _session.Complaints[i];
+            _complaintList.AddItem($"{c.Storylet.Title} — {c.State}" + (c.State == ComplaintState.Open ? $" (réparation {_session.Money(c.RepairCostCopper)}, avant la fin du jour {c.ExpiresAfterDay})" : ""));
+            if (c.State != ComplaintState.Open) _complaintList.SetItemCustomFgColor(i, new Color(0.55f, 0.55f, 0.55f));
+            if (c.Id == _selectedComplaintId) _complaintList.Select(i);
+        }
+        var selectedComplaint = _session.Complaints.FirstOrDefault(c => c.Id == _selectedComplaintId);
+        foreach (var choice in Enum.GetValues<ComplaintChoice>())
+        {
+            var button = _complaintButtons[(int)choice];
+            var labels = selectedComplaint?.Storylet.Labels;
+            button.Text = labels is null ? choice.ToString() : choice switch
+            {
+                ComplaintChoice.Repair => $"{labels.Repair} ({_session.Money(selectedComplaint!.RepairCostCopper)})",
+                ComplaintChoice.Apologize => labels.Apologize,
+                _ => labels.Deny,
+            };
+            button.Disabled = selectedComplaint is null || _session.ComplaintCheck(selectedComplaint.Id, choice).Count > 0;
         }
 
         RefreshDetail(offer);

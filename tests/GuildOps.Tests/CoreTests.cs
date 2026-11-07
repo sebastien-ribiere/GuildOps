@@ -58,7 +58,8 @@ public class DataTests
         Assert.Throws<GameDataException>(() => GameDataLoader.Load(rules,
             File.ReadAllText(Path.Combine(dir, "hero-balancing.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")),
-            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json"))));
+            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json")),
+            File.ReadAllText(Path.Combine(dir, "storylets.v0.1.json"))));
     }
 
     [Fact]
@@ -69,7 +70,8 @@ public class DataTests
         Assert.Throws<GameDataException>(() => GameDataLoader.Load(
             File.ReadAllText(Path.Combine(dir, "rules.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "hero-balancing.v0.1.json")),
-            File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")), cat.Replace("\"rewardCopper\": 3", "\"rewardCopper\": 11")));
+            File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")), cat.Replace("\"rewardCopper\": 3", "\"rewardCopper\": 11"),
+            File.ReadAllText(Path.Combine(dir, "storylets.v0.1.json"))));
     }
 
     [Fact]
