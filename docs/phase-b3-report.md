@@ -1,6 +1,6 @@
 # Phase B3 — rapport (traits, préparation de Jean-Michel, 8 storylets)
 
-Branche `feat/phase-b3-traits-storylets`, créée depuis `feat/phase-b2-complaints-storylets` (PR B2 pas encore fusionnée : **cette branche contient aussi les commits de B2** tant que B2 n'est pas sur `main`). Contrat : `75764b0` du dépôt formateur ; décisions D06 à D09 dans `docs/07-decisions.md` (branche `docs/guildops-decisions-phase-b` du dépôt formateur).
+Branche `feat/phase-b3-traits-storylets`, créée depuis la fin de B2 puis rebasée sur `main` après la fusion de la PR #4 (la PR ne contient que B3). Contrat : `75764b0` du dépôt formateur ; décisions D06 à D09 dans `docs/07-decisions.md` (branche `docs/guildops-decisions-phase-b` du dépôt formateur).
 
 ## Décisions prises avec le formateur pour B3
 | Sujet | Décision |
