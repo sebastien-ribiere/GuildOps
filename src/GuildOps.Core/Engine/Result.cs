@@ -35,6 +35,11 @@ public static class RefusalMessages
         RefusalReason.NotEnoughTreasury => "La trésorerie ne couvre pas le coût d'engagement.",
         RefusalReason.DailyLimitReached => "Limite de missions de la journée atteinte.",
         RefusalReason.QuestNotAssigned => "Cette mission n'est pas en cours (déjà résolue ?).",
+        RefusalReason.PendingMissions => "Des missions engagées ne sont pas résolues : elles doivent l'être avant la fin de la journée.",
+        RefusalReason.GameFinished => "La partie est terminée : recommencez pour rejouer.",
+        RefusalReason.RegenerationDisabled => "La régénération du tableau n'est pas activée dans les règles.",
+        RefusalReason.RegenerationAlreadyUsed => "La régénération du tableau a déjà été utilisée dans cette partie.",
+        RefusalReason.MissionsAlreadyEngaged => "Impossible de régénérer le tableau : une mission a déjà été engagée aujourd'hui.",
         _ => reason.ToString(),
     };
 }
@@ -63,3 +68,18 @@ public sealed record MissionOutcome(
 {
     public int ReputationDelta => ReputationAfter - ReputationBefore;
 }
+
+/// <summary>Bilan royal après la dernière journée. Un échec n'est pas un game-over : l'état est conservé et on peut recommencer.</summary>
+public sealed record FinalReport(
+    bool Success,
+    int Reputation,
+    int TreasuryCopper,
+    int MissionsSucceeded,
+    bool ReputationOk,
+    bool TreasuryOk,
+    bool MissionsOk,
+    string Message);
+
+public sealed record DayTransition(int EndedDay, int? NewDay, IReadOnlyList<QuestOffer> NewOffers, FinalReport? Report);
+
+public sealed record Regeneration(int Day, IReadOnlyList<QuestOffer> NewOffers, int ReputationBefore, int ReputationAfter);

@@ -11,7 +11,7 @@ public sealed class Guild
 
     public int TreasuryCopper { get; private set; }
     public int Reputation { get; private set; }
-    public int Day { get; }
+    public int Day { get; internal set; }
     public int MissionsAcceptedToday { get; internal set; }
     public int MissionsSucceeded { get; internal set; }
 
