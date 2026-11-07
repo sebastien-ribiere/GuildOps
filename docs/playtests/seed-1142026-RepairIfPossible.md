@@ -1,0 +1,113 @@
+# Partie de référence — graine 1142026, robot glouton, réclamations : RepairIfPossible
+
+**Bilan : REDRESSEMENT RÉUSSI** — réputation 64 (seuil 55), caisse 17 or 7 cuivres (seuil 10 or), 15 succès (seuil 8), 5 réclamation(s).
+
+## Journal complet
+
+- #1 (J1) Nouvelle partie (graine 1142026) : 12 aventuriers, 12 or, réputation 35.
+- #2 (J1) Jour 1 : 4 offres publiées (palier « suspecte »).
+- #3 (J1) Gaston FinOps part pour « Le moulin capricieux » (engagement : 6 cuivres).
+- #4 (J1) Gaston FinOps réussit « Le moulin capricieux » (tirage 18 / chance 73 %) : prime 60 cuivres, énergie -22.
+- #5 (J1) Réputation 35 → 39 (+4) : Succès de « Le moulin capricieux ».
+- #6 (J1) Clovis Scrum part pour « Rats de la cave » (engagement : 12 cuivres).
+- #7 (J1) Clovis Scrum réussit « Rats de la cave » (tirage 36 / chance 82 %) : prime 25 cuivres, énergie -17.
+- #8 (J1) Réputation 39 → 43 (+4) : Succès de « Rats de la cave ».
+- #9 (J1) Clovis Scrum coordonne l'équipe : chaque autre aventurier récupère jusqu'à 3 points d'énergie.
+- #10 (J1) Gérard Dev part pour « Le chapeau du maire » (engagement : 0 cuivre).
+- #11 (J1) Gérard Dev réussit « Le chapeau du maire » (tirage 5 / chance 95 %) : prime 5 cuivres, énergie -9.
+- #12 (J1) Réputation 43 → 45 (+2) : Succès de « Le chapeau du maire ».
+- #13 (J1) Réputation 45 → 41 (-4) : dommage collatéral (Le mur porteur).
+- #14 (J1) Réclamation c1 — Le mur porteur : Gérard a vaincu les rats. Et la cave. Et le mur porteur. La taverne réclame réparation. (réparation : 80 cuivres ; à traiter avant la fin du jour 3).
+- #15 (J1) Réclamation c1 close : Payer les réparations (coût 80 cuivres).
+- #16 (J1) Réputation 41 → 44 (+3) : réclamation c1.
+- #17 (J1) Fin du jour 1.
+- #18 (J2) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #19 (J2) Jour 2 : 4 offres publiées (palier « acceptable »).
+- #20 (J2) Clovis Scrum part pour « Bandits de la route » (engagement : 12 cuivres).
+- #21 (J2) Clovis Scrum échoue « Bandits de la route » (tirage 72 / chance 67 %) : aucune prime, énergie -27.
+- #22 (J2) Réputation 44 → 41 (-3) : Échec de « Bandits de la route ».
+- #23 (J2) Clovis Scrum coordonne l'équipe : chaque autre aventurier récupère jusqu'à 3 points d'énergie.
+- #24 (J2) Gaston FinOps part pour « Le moulin capricieux » (engagement : 6 cuivres).
+- #25 (J2) Gaston FinOps échoue « Le moulin capricieux » (tirage 90 / chance 73 %) : aucune prime, énergie -22.
+- #26 (J2) Réputation 41 → 38 (-3) : Échec de « Le moulin capricieux ».
+- #27 (J2) Léon DataOps part pour « La soupe du village » (engagement : 25 cuivres).
+- #28 (J2) Léon DataOps échoue « La soupe du village » (tirage 95 / chance 82 %) : aucune prime, énergie -23.
+- #29 (J2) Réputation 38 → 35 (-3) : Échec de « La soupe du village ».
+- #30 (J2) Fin du jour 2.
+- #31 (J3) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #32 (J3) Jour 3 : 4 offres publiées (palier « suspecte »).
+- #33 (J3) Gaston FinOps part pour « Le pont qui grince » (engagement : 6 cuivres).
+- #34 (J3) Gaston FinOps réussit « Le pont qui grince » (tirage 77 / chance 78 %) : prime 30 cuivres, énergie -18.
+- #35 (J3) Réputation 35 → 39 (+4) : Succès de « Le pont qui grince ».
+- #36 (J3) Alice UX part pour « Poules en fuite » (engagement : 0 cuivre).
+- #37 (J3) Alice UX réussit « Poules en fuite » (tirage 43 / chance 90 %) : prime 8 cuivres, énergie -17.
+- #38 (J3) Réputation 39 → 41 (+2) : Succès de « Poules en fuite ».
+- #39 (J3) Gérard Dev part pour « Le chapeau du maire » (engagement : 0 cuivre).
+- #40 (J3) Gérard Dev réussit « Le chapeau du maire » (tirage 20 / chance 95 %) : prime 5 cuivres, énergie -9.
+- #41 (J3) Réputation 41 → 43 (+2) : Succès de « Le chapeau du maire ».
+- #42 (J3) Fin du jour 3.
+- #43 (J4) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #44 (J4) Jour 4 : 4 offres publiées (palier « acceptable »).
+- #45 (J4) Hermine SecOps part pour « Escorte du marchand » (engagement : 44 cuivres).
+- #46 (J4) Hermine SecOps échoue « Escorte du marchand » (tirage 87 / chance 66 %) : aucune prime, énergie -32.
+- #47 (J4) Réputation 43 → 40 (-3) : Échec de « Escorte du marchand ».
+- #48 (J4) Jean-Michel SRE part pour « Le Wi-Fi du dragon » (engagement : 25 cuivres).
+- #49 (J4) Jean-Michel SRE réussit « Le Wi-Fi du dragon » (tirage 8 / chance 67 %) : prime 1 or 40 cuivres, énergie -28.
+- #50 (J4) Réputation 40 → 44 (+4) : Succès de « Le Wi-Fi du dragon ».
+- #51 (J4) Réputation 44 → 40 (-4) : dommage collatéral (Livraison avant-hier).
+- #52 (J4) Réclamation c2 — Livraison avant-hier : Votre publicité promet une exécution éclair. Le client exige une livraison avant-hier. (réparation : 40 cuivres ; à traiter avant la fin du jour 6).
+- #53 (J4) Réclamation c2 close : Calmer le client avec un geste commercial (coût 40 cuivres).
+- #54 (J4) Réputation 40 → 43 (+3) : réclamation c2.
+- #55 (J4) Gaston FinOps part pour « Le moulin capricieux » (engagement : 6 cuivres).
+- #56 (J4) Gaston FinOps réussit « Le moulin capricieux » (tirage 58 / chance 73 %) : prime 60 cuivres, énergie -22.
+- #57 (J4) Réputation 43 → 47 (+4) : Succès de « Le moulin capricieux ».
+- #58 (J4) Réputation 47 → 43 (-4) : dommage collatéral (Livraison avant-hier).
+- #59 (J4) Réclamation c3 — Livraison avant-hier : Votre publicité promet une exécution éclair. Le client exige une livraison avant-hier. (réparation : 40 cuivres ; à traiter avant la fin du jour 6).
+- #60 (J4) Réclamation c3 close : Calmer le client avec un geste commercial (coût 40 cuivres).
+- #61 (J4) Réputation 43 → 46 (+3) : réclamation c3.
+- #62 (J4) Fin du jour 4.
+- #63 (J5) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #64 (J5) Jour 5 : 4 offres publiées (palier « acceptable »).
+- #65 (J5) Léon DataOps part pour « Grimoire de l'Académie » (engagement : 25 cuivres).
+- #66 (J5) Léon DataOps réussit « Grimoire de l'Académie » (tirage 36 / chance 65 %) : prime 3 or 50 cuivres, énergie -39.
+- #67 (J5) Réputation 46 → 50 (+4) : Succès de « Grimoire de l'Académie ».
+- #68 (J5) Alice UX part pour « Les canards démoniaques » (engagement : 10 cuivres).
+- #69 (J5) Alice UX échoue « Les canards démoniaques » (tirage 89 / chance 67 %) : aucune prime, énergie -24.
+- #70 (J5) Réputation 50 → 47 (-3) : Échec de « Les canards démoniaques ».
+- #71 (J5) Léon DataOps part pour « La soupe du village » (engagement : 25 cuivres).
+- #72 (J5) Léon DataOps réussit « La soupe du village » (tirage 57 / chance 82 %) : prime 45 cuivres, énergie -23.
+- #73 (J5) Réputation 47 → 51 (+4) : Succès de « La soupe du village ».
+- #74 (J5) Fin du jour 5.
+- #75 (J6) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #76 (J6) Jour 6 : 4 offres publiées (palier « acceptable »).
+- #77 (J6) Léon DataOps part pour « La tour hantée » (engagement : 25 cuivres).
+- #78 (J6) Léon DataOps réussit « La tour hantée » (tirage 58 / chance 75 %) : prime 1 or 60 cuivres, énergie -33.
+- #79 (J6) Réputation 51 → 55 (+4) : Succès de « La tour hantée ».
+- #80 (J6) Gaston FinOps part pour « Le moulin capricieux » (engagement : 6 cuivres).
+- #81 (J6) Gaston FinOps échoue « Le moulin capricieux » (tirage 86 / chance 73 %) : aucune prime, énergie -22.
+- #82 (J6) Réputation 55 → 52 (-3) : Échec de « Le moulin capricieux ».
+- #83 (J6) Gaston FinOps part pour « Le pont qui grince » (engagement : 6 cuivres).
+- #84 (J6) Gaston FinOps réussit « Le pont qui grince » (tirage 5 / chance 78 %) : prime 30 cuivres, énergie -18.
+- #85 (J6) Réputation 52 → 56 (+4) : Succès de « Le pont qui grince ».
+- #86 (J6) Fin du jour 6.
+- #87 (J7) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #88 (J7) Jour 7 : 4 offres publiées (palier « acceptable »).
+- #89 (J7) Gaston FinOps part pour « Le moulin capricieux » (engagement : 6 cuivres).
+- #90 (J7) Gaston FinOps réussit « Le moulin capricieux » (tirage 71 / chance 73 %) : prime 60 cuivres, énergie -22.
+- #91 (J7) Réputation 56 → 60 (+4) : Succès de « Le moulin capricieux ».
+- #92 (J7) Gaston FinOps part pour « Le pont qui grince » (engagement : 6 cuivres).
+- #93 (J7) Gaston FinOps réussit « Le pont qui grince » (tirage 28 / chance 78 %) : prime 30 cuivres, énergie -18.
+- #94 (J7) Réputation 60 → 64 (+4) : Succès de « Le pont qui grince ».
+- #95 (J7) Réputation 64 → 60 (-4) : dommage collatéral (Livraison avant-hier).
+- #96 (J7) Réclamation c4 — Livraison avant-hier : Votre publicité promet une exécution éclair. Le client exige une livraison avant-hier. (réparation : 40 cuivres ; à traiter avant la fin du jour 9).
+- #97 (J7) Réclamation c4 close : Calmer le client avec un geste commercial (coût 40 cuivres).
+- #98 (J7) Réputation 60 → 63 (+3) : réclamation c4.
+- #99 (J7) Merlinda QA part pour « Le puits qui bafouille » (engagement : 0 cuivre).
+- #100 (J7) Merlinda QA réussit « Le puits qui bafouille » (tirage 72 / chance 95 %) : prime 10 cuivres, énergie -12.
+- #101 (J7) Réputation 63 → 65 (+2) : Succès de « Le puits qui bafouille ».
+- #102 (J7) Réputation 65 → 61 (-4) : dommage collatéral (La prime de conformité).
+- #103 (J7) Réclamation c5 — La prime de conformité : Merlinda réclame une prime pour parfaite conformité au parchemin, tampons de sa grenouille à l'appui. (réparation : 60 cuivres ; à traiter avant la fin du jour 9).
+- #104 (J7) Réclamation c5 close : Verser la prime de conformité (coût 60 cuivres).
+- #105 (J7) Réputation 61 → 64 (+3) : réclamation c5.
+- #106 (J7) Fin du jour 7.
+- #107 (J7) Redressement réussi ! Le conseil royal est satisfait (réputation 64/55, trésorerie 17 or 7 cuivres/10 or, missions réussies 15/8).
