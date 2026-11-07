@@ -1,0 +1,207 @@
+{
+  "schemaVersion": "0.1.0",
+  "status": "proposition-non-validee",
+  "notes": "Catalogue de 20 modeles redige pour la Phase A. Les valeurs respectent les bornes de categoryParameters (rules.v0.1.json) mais le contenu n'a PAS ete valide par le formateur. Medor doit rester coherent avec rules.guaranteedRecoveryOffer.",
+  "templates": [
+    {
+      "id": "promener-medor",
+      "title": "Promener Médor",
+      "description": "Mme Chausson cherche quelqu'un pour promener Médor. Il mord peu.",
+      "category": "corvee",
+      "skill": "exploration",
+      "minLevel": 1,
+      "energyCost": 10,
+      "rewardCopper": 2
+    },
+    {
+      "id": "chapeau-du-maire",
+      "title": "Le chapeau du maire",
+      "description": "Le chapeau du maire est dans un arbre. Le maire aussi, un peu.",
+      "category": "corvee",
+      "skill": "combat",
+      "minLevel": 1,
+      "energyCost": 12,
+      "rewardCopper": 5
+    },
+    {
+      "id": "poules-en-fuite",
+      "title": "Poules en fuite",
+      "description": "Douze poules ont découvert la liberté de circulation.",
+      "category": "corvee",
+      "skill": "exploration",
+      "minLevel": 1,
+      "energyCost": 15,
+      "rewardCopper": 8
+    },
+    {
+      "id": "puits-qui-bafouille",
+      "title": "Le puits qui bafouille",
+      "description": "Le puits répète tout ce qu'on lui dit, avec du retard.",
+      "category": "corvee",
+      "skill": "magie",
+      "minLevel": 2,
+      "energyCost": 12,
+      "rewardCopper": 10
+    },
+    {
+      "id": "rats-de-la-cave",
+      "title": "Rats de la cave",
+      "description": "La taverne jure que les rats ont un syndicat.",
+      "category": "village",
+      "skill": "combat",
+      "minLevel": 1,
+      "energyCost": 15,
+      "rewardCopper": 25
+    },
+    {
+      "id": "pont-qui-grince",
+      "title": "Le pont qui grince",
+      "description": "Le pont grince à chaque pas. Les trolls se plaignent du bruit.",
+      "category": "village",
+      "skill": "ingenierie",
+      "minLevel": 1,
+      "energyCost": 18,
+      "rewardCopper": 30
+    },
+    {
+      "id": "recette-de-la-soupe",
+      "title": "La soupe du village",
+      "description": "Un sortilège de dégustation s'impose avant le banquet.",
+      "category": "village",
+      "skill": "magie",
+      "minLevel": 2,
+      "energyCost": 20,
+      "rewardCopper": 45
+    },
+    {
+      "id": "moulin-capricieux",
+      "title": "Le moulin capricieux",
+      "description": "Le moulin tourne dans les deux sens, selon son humeur.",
+      "category": "village",
+      "skill": "ingenierie",
+      "minLevel": 2,
+      "energyCost": 22,
+      "rewardCopper": 60
+    },
+    {
+      "id": "sentier-des-pelerins",
+      "title": "Sentier des pèlerins",
+      "description": "Cartographier un sentier que tout le monde connaît déjà.",
+      "category": "village",
+      "skill": "exploration",
+      "minLevel": 3,
+      "energyCost": 25,
+      "rewardCopper": 70
+    },
+    {
+      "id": "canards-demoniaques",
+      "title": "Les canards démoniaques",
+      "description": "Enquêter sur des canards très certainement possédés.",
+      "category": "aventure",
+      "skill": "exploration",
+      "minLevel": 2,
+      "energyCost": 22,
+      "rewardCopper": 90
+    },
+    {
+      "id": "wifi-du-dragon",
+      "title": "Le Wi-Fi du dragon",
+      "description": "Le dragon veut du signal dans sa grotte. Il paie, il mord.",
+      "category": "aventure",
+      "skill": "ingenierie",
+      "minLevel": 3,
+      "energyCost": 28,
+      "rewardCopper": 140
+    },
+    {
+      "id": "tour-hantee",
+      "title": "La tour hantée",
+      "description": "Un fantôme réclame un état des lieux de sortie.",
+      "category": "aventure",
+      "skill": "magie",
+      "minLevel": 3,
+      "energyCost": 30,
+      "rewardCopper": 160
+    },
+    {
+      "id": "bandits-de-la-route",
+      "title": "Bandits de la route",
+      "description": "Les bandits proposent des péages. Dissuadez-les.",
+      "category": "aventure",
+      "skill": "combat",
+      "minLevel": 2,
+      "energyCost": 25,
+      "rewardCopper": 110
+    },
+    {
+      "id": "golem-de-maintenance",
+      "title": "Golem de maintenance",
+      "description": "Le golem de la mairie boucle sur la même tâche depuis mardi.",
+      "category": "aventure",
+      "skill": "ingenierie",
+      "minLevel": 4,
+      "energyCost": 35,
+      "rewardCopper": 200
+    },
+    {
+      "id": "escorte-du-marchand",
+      "title": "Escorte du marchand",
+      "description": "Un marchand important veut traverser la forêt sans surprise.",
+      "category": "notable",
+      "skill": "combat",
+      "minLevel": 3,
+      "energyCost": 32,
+      "rewardCopper": 280
+    },
+    {
+      "id": "grimoire-de-lacademie",
+      "title": "Grimoire de l'Académie",
+      "description": "Retrouver un grimoire prêté en 1347 et jamais rendu.",
+      "category": "notable",
+      "skill": "magie",
+      "minLevel": 3,
+      "energyCost": 36,
+      "rewardCopper": 350
+    },
+    {
+      "id": "forge-des-nains",
+      "title": "La forge des nains",
+      "description": "Moderniser une forge sans froisser les traditions.",
+      "category": "notable",
+      "skill": "ingenierie",
+      "minLevel": 4,
+      "energyCost": 40,
+      "rewardCopper": 480
+    },
+    {
+      "id": "ruines-oubliees",
+      "title": "Les ruines oubliées",
+      "description": "Explorer des ruines dont personne ne retrouve le plan.",
+      "category": "notable",
+      "skill": "exploration",
+      "minLevel": 4,
+      "energyCost": 42,
+      "rewardCopper": 600
+    },
+    {
+      "id": "artefact-du-roi-liche",
+      "title": "L'artefact du roi des liches",
+      "description": "Récupérer l'artefact. Le roi n'est pas d'accord.",
+      "category": "royale",
+      "skill": "combat",
+      "minLevel": 4,
+      "energyCost": 55,
+      "rewardCopper": 1500
+    },
+    {
+      "id": "sceau-du-conseil-royal",
+      "title": "Le sceau du conseil royal",
+      "description": "Un sortilège de conformité pour le conseil, sans en changer le sens.",
+      "category": "royale",
+      "skill": "magie",
+      "minLevel": 4,
+      "energyCost": 50,
+      "rewardCopper": 1100
+    }
+  ]
+}

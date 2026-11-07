@@ -1,0 +1,283 @@
+{
+  "schemaVersion": "0.1.0",
+  "authority": "Reference de travail pour le prototype; l'approbation de la PR valide cette baseline. Paramètres à rééquilibrer par playtest.",
+  "engine": "GuildOps.Core",
+  "platform": {
+    "godotVersion": "4.7.2-stable-.NET",
+    "dotnetTargetFramework": "net10.0",
+    "dotnetSdk": "10.0.x-LTS",
+    "deployment": "desktop-offline"
+  },
+  "currency": {
+    "internalUnit": "copper",
+    "copperPerGold": 100,
+    "silverEnabled": false
+  },
+  "initialGuild": {
+    "treasuryCopper": 1200,
+    "reputation": 35,
+    "day": 1
+  },
+  "heroes": {
+    "count": 12,
+    "availability": "all_from_start",
+    "assignmentPolicy": "oneHeroPerQuest",
+    "skills": [
+      "combat",
+      "magie",
+      "exploration",
+      "ingenierie"
+    ],
+    "maxEnergy": 100
+  },
+  "game": {
+    "days": 7,
+    "offersPerDay": 4,
+    "maxMissionsPerDay": 3,
+    "newOffers": "only_on_day_start",
+    "unacceptedOfferExpires": "at_day_end",
+    "assignedMissionResolution": "within_same_day",
+    "regenerateDayOnce": true,
+    "energyRegenerationAtDayStart": 30,
+    "energyRegenerationDay1": 0,
+    "victory": {
+      "minimumTreasuryCopper": 1000,
+      "minimumReputation": 55,
+      "minimumSucceededMissions": 8,
+      "check": "after_day_7"
+    },
+    "earlyGameOver": false,
+    "resetAvailable": true
+  },
+  "reputation": {
+    "min": 0,
+    "max": 100,
+    "tiers": [
+      {
+        "id": "paria",
+        "min": 0,
+        "max": 19
+      },
+      {
+        "id": "suspecte",
+        "min": 20,
+        "max": 39
+      },
+      {
+        "id": "acceptable",
+        "min": 40,
+        "max": 59
+      },
+      {
+        "id": "recommandee",
+        "min": 60,
+        "max": 79
+      },
+      {
+        "id": "legendaire",
+        "min": 80,
+        "max": 100
+      }
+    ],
+    "delta": {
+      "regularSuccess": 4,
+      "communitySuccess": 2,
+      "regularFailure": -3,
+      "communityFailure": -1,
+      "collateralDamage": -4,
+      "paidCompensation": 3,
+      "apology": 1,
+      "denyComplaint": -2
+    },
+    "compensationRules": {
+      "requiresOpenIncident": true,
+      "oneDecisionPerIncident": true,
+      "mayNotReclassifyMission": true,
+      "affectsFutureOffersOnly": true,
+      "clampAfterEachEvent": true
+    }
+  },
+  "offerGeneration": {
+    "newOffersPerDay": 4,
+    "weightedSampling": "deterministic_with_injected_rng_and_sorted_catalogue",
+    "uniqueModelPerDay": true,
+    "weightsPercentByReputationTier": {
+      "paria": [
+        85,
+        15,
+        0,
+        0,
+        0
+      ],
+      "suspecte": [
+        55,
+        40,
+        5,
+        0,
+        0
+      ],
+      "acceptable": [
+        25,
+        45,
+        25,
+        5,
+        0
+      ],
+      "recommandee": [
+        10,
+        25,
+        40,
+        20,
+        5
+      ],
+      "legendaire": [
+        5,
+        15,
+        30,
+        35,
+        15
+      ]
+    },
+    "categories": [
+      "corvee",
+      "village",
+      "aventure",
+      "notable",
+      "royale"
+    ],
+    "guaranteedRecoveryOffer": {
+      "when": "reputation < 40 OR treasuryCopper < cheapestEligibleHeroBaseCost",
+      "countWithinFour": 1,
+      "templateId": "promener-medor",
+      "heroEngagementCostCopper": 0,
+      "questEnergyCost": 10,
+      "questMinLevel": 1,
+      "questRewardCopper": 2,
+      "questRiskPenaltyPercentagePoints": 0,
+      "skill": "exploration",
+      "successReputationDelta": 2
+    },
+    "offerMustBeEligibleForAtLeastOneHero": true,
+    "doNotRegenerateOffersOnRead": true
+  },
+  "categoryParameters": {
+    "corvee": {
+      "rewardCopperMin": 2,
+      "rewardCopperMax": 10,
+      "energyCostMin": 10,
+      "energyCostMax": 15,
+      "levelMin": 1,
+      "levelMax": 2,
+      "riskPenaltyPp": 0,
+      "waiveHeroEngagementCost": true
+    },
+    "village": {
+      "rewardCopperMin": 20,
+      "rewardCopperMax": 70,
+      "energyCostMin": 15,
+      "energyCostMax": 25,
+      "levelMin": 1,
+      "levelMax": 3,
+      "riskPenaltyPp": 8,
+      "waiveHeroEngagementCost": false
+    },
+    "aventure": {
+      "rewardCopperMin": 80,
+      "rewardCopperMax": 200,
+      "energyCostMin": 20,
+      "energyCostMax": 35,
+      "levelMin": 2,
+      "levelMax": 4,
+      "riskPenaltyPp": 18,
+      "waiveHeroEngagementCost": false
+    },
+    "notable": {
+      "rewardCopperMin": 250,
+      "rewardCopperMax": 600,
+      "energyCostMin": 30,
+      "energyCostMax": 45,
+      "levelMin": 3,
+      "levelMax": 4,
+      "riskPenaltyPp": 28,
+      "waiveHeroEngagementCost": false
+    },
+    "royale": {
+      "rewardCopperMin": 800,
+      "rewardCopperMax": 1800,
+      "energyCostMin": 40,
+      "energyCostMax": 60,
+      "levelMin": 4,
+      "levelMax": 5,
+      "riskPenaltyPp": 38,
+      "waiveHeroEngagementCost": false
+    }
+  },
+  "missionResolution": {
+    "formula": "clamp(baseSuccessPercent - category.riskPenaltyPp + levelBonusPerAdditionalLevelPp*(hero.level - quest.minLevel) + traitSuccessModifierPp - (energyBefore < lowEnergyMultiple * quest.energyCost ? lowEnergyPenaltyPp : 0), minSuccessPercent, maxSuccessPercent)",
+    "baseSuccessPercent": 85,
+    "levelBonusPerAdditionalLevelPp": 5,
+    "lowEnergyMultiple": 2,
+    "lowEnergyPenaltyPp": 5,
+    "minSuccessPercent": 15,
+    "maxSuccessPercent": 95,
+    "rollDomain": "integer 0..99",
+    "isSuccess": "roll < computedSuccessPercent",
+    "consumesEnergyOnSuccessAndFailure": true,
+    "consumesRewardOnlyOnSuccess": true,
+    "levelBelowMinimumRejectsAssignment": true,
+    "energyEqualToCostIsEnough": true,
+    "treasuryEqualToCostIsEnough": true,
+    "invalidCommandMutatesNothing": true,
+    "duplicateResolutionMustNotMutateAnything": true
+  },
+  "complaints": {
+    "onlyWhenActualIncident": true,
+    "atMostOnePendingIncidentPerMission": true,
+    "alternatives": [
+      {
+        "id": "repair",
+        "description": "payer le dédommagement fixe de l'incident",
+        "defaultIllustrativeCostCopper": 80,
+        "reputationDelta": 3,
+        "requiresSufficientTreasury": true
+      },
+      {
+        "id": "apologize",
+        "description": "présenter des excuses et reconnaître la faute",
+        "costCopper": 0,
+        "reputationDelta": 1
+      },
+      {
+        "id": "deny",
+        "description": "refuser la réclamation",
+        "costCopper": 0,
+        "reputationDelta": -2
+      }
+    ],
+    "noCompensationWithoutIncident": true,
+    "incidentResolvedAtMostOnce": true
+  },
+  "narrative": {
+    "maxStoryletsPerMission": 1,
+    "storyletsForInitialSlice": 2,
+    "storyletsForV0": 8,
+    "storyletsConditionalAndDataDriven": true,
+    "contentIsLocal": true
+  },
+  "rng": {
+    "injectable": true,
+    "deterministicOnSameVersionAndSeed": true,
+    "testSeed": 1142026,
+    "selectionOrder": "stable_by_id",
+    "rerollCannotBeTriggeredByUIRefresh": true
+  },
+  "performance": {
+    "catalogueSizesForBenchmark": [
+      100,
+      1000,
+      10000
+    ],
+    "sameSeedAndDatasetForBeforeAfter": true
+  },
+  "sourceOfTruth": "game-data/rules.v0.1.json; tests contractuels reflètent ce fichier. Ne pas dupliquer les seuils réels dans les scènes."
+}
