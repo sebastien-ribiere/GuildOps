@@ -38,6 +38,7 @@
     "unacceptedOfferExpires": "at_day_end",
     "assignedMissionResolution": "within_same_day",
     "regenerateDayOnce": true,
+    "regenerateDayReputationCost": 2,
     "energyRegenerationAtDayStart": 30,
     "energyRegenerationDay1": 0,
     "victory": {

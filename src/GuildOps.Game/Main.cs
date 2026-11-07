@@ -25,6 +25,7 @@ public partial class Main : Control
     private Button _assignButton = null!;
     private Button _resolveButton = null!;
     private Button _endDayButton = null!;
+    private Button _regenButton = null!;
     private Label _feedback = null!;
 
     public override void _Ready()
@@ -82,6 +83,10 @@ public partial class Main : Control
         _resolveButton.Pressed += OnResolve;
         right.AddChild(_resolveButton);
 
+        _regenButton = new Button();
+        _regenButton.Pressed += OnRegenerate;
+        right.AddChild(_regenButton);
+
         _endDayButton = new Button { Text = "Terminer la journée" };
         _endDayButton.Pressed += OnEndDay;
         right.AddChild(_endDayButton);
@@ -119,6 +124,16 @@ public partial class Main : Control
         _feedback.Text = $"{(o.Success ? "SUCCÈS" : "ÉCHEC")} — tirage {o.Roll} pour {o.ChancePercent} % de chance. " +
                          $"Prime : {_session.Money(o.RewardPaidCopper)}. Énergie -{o.EnergySpent}. " +
                          $"Réputation {o.ReputationBefore} → {o.ReputationAfter} ({o.ReputationDelta:+#;-#;0}).";
+        Refresh();
+    }
+
+    private void OnRegenerate()
+    {
+        var result = _session.RegenerateOffers();
+        if (!result.Ok) { _feedback.Text = "Refusé : " + result.Message; Refresh(); return; }
+        _selectedOfferId = null;
+        var v = result.Value!;
+        _feedback.Text = $"Tableau renouvelé. Réputation {v.ReputationBefore} → {v.ReputationAfter}. Ce droit ne peut servir qu'une fois par partie.";
         Refresh();
     }
 
@@ -178,6 +193,10 @@ public partial class Main : Control
         var finished = _session.Status == GameStatus.Finished;
         _resolveButton.Disabled = finished || quest is null || quest.State != QuestState.Assigned;
         _endDayButton.Disabled = finished;
+        _regenButton.Disabled = _session.RegenerationCheck().Count > 0;
+        _regenButton.Text = _session.RegenerationUsed
+            ? "Renouveler le tableau (déjà utilisé)"
+            : $"Renouveler le tableau (−{_session.Data.Rules.RegenerationReputationCost} réputation, une fois par partie)";
         _endDayButton.Text = _session.Guild.Day >= _session.Data.Rules.Days ? "Terminer la journée et passer au bilan royal" : "Terminer la journée";
         _assignButton.Disabled = finished || offer is null || _selectedHeroId is null || !_session.Preview(offer.Id, _selectedHeroId).CanAssign;
         _journal.Text = string.Join("\n", _session.Events.Select(e => $"#{e.Sequence} (J{e.Day}) {e.Message}"));

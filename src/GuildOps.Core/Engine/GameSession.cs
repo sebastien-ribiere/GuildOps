@@ -41,9 +41,11 @@ public sealed class GameSession
     public IReadOnlyList<Hero> Heroes => _heroes;
     /// <summary>Historique complet des offres de toutes les journées (les anciennes ne sont jamais modifiées après expiration).</summary>
     public IReadOnlyList<QuestOffer> Offers => _offers;
-    /// <summary>Offres publiées pour la journée en cours.</summary>
-    public IReadOnlyList<QuestOffer> CurrentOffers => _offers.Where(o => o.Day == Guild.Day).ToList();
+    /// <summary>Tableau actif de la journée en cours (les offres remplacées par une régénération restent dans <see cref="Offers"/>).</summary>
+    public IReadOnlyList<QuestOffer> CurrentOffers => _offers.Where(o => o.Day == Guild.Day && o.State != OfferState.Expired).ToList();
     public GameStatus Status { get; private set; }
+    /// <summary>Vrai une fois la régénération (unique par partie) consommée.</summary>
+    public bool RegenerationUsed { get; private set; }
     public FinalReport? Report { get; private set; }
     public IReadOnlyList<Quest> Quests => _quests;
     public IReadOnlyList<GameEvent> Events => _events;
@@ -62,19 +64,20 @@ public sealed class GameSession
         _events.Clear();
         _questCounter = 0;
         Status = GameStatus.InProgress;
+        RegenerationUsed = false;
         Report = null;
         _heroes.AddRange(Data.Heroes.Select(d => new Hero(d)));
         Guild = new Guild(rules.InitialTreasuryCopper, rules.InitialReputation, rules.InitialDay);
 
         Log(GameEventType.GameStarted, $"Nouvelle partie (graine {Seed}) : {_heroes.Count} aventuriers, {Money(Guild.TreasuryCopper)}, réputation {Guild.Reputation}.");
-        PublishOffers();
+        PublishOffers($"d{Guild.Day}");
     }
 
-    private void PublishOffers()
+    private void PublishOffers(string idPrefix)
     {
         var templates = OfferGenerator.Generate(Data, Guild.Reputation, Guild.TreasuryCopper, _heroes, _rng);
         for (var i = 0; i < templates.Count; i++)
-            _offers.Add(new QuestOffer($"d{Guild.Day}-o{i + 1}", templates[i], Guild.Day));
+            _offers.Add(new QuestOffer($"{idPrefix}-o{i + 1}", templates[i], Guild.Day));
         Log(GameEventType.OffersPublished, $"Jour {Guild.Day} : {templates.Count} offres publiées (palier « {ReputationTierId} »).");
     }
 
@@ -188,8 +191,43 @@ public sealed class GameSession
         Guild.MissionsAcceptedToday = 0;
         foreach (var hero in _heroes) hero.Energy = Math.Min(rules.MaxEnergy, hero.Energy + rules.EnergyRegenerationAtDayStart);
         Log(GameEventType.EnergyRecovered, $"Repos : chaque aventurier récupère jusqu'à {rules.EnergyRegenerationAtDayStart} points d'énergie (maximum {rules.MaxEnergy}).");
-        PublishOffers();
+        PublishOffers($"d{Guild.Day}");
         return Result<DayTransition>.Success(new DayTransition(ended, Guild.Day, CurrentOffers, null));
+    }
+
+    /// <summary>Requête pure : raisons pour lesquelles la régénération est refusée (liste vide si elle est possible).</summary>
+    public IReadOnlyList<RefusalReason> RegenerationCheck()
+    {
+        if (Status == GameStatus.Finished) return [RefusalReason.GameFinished];
+        var reasons = new List<RefusalReason>();
+        if (!Data.Rules.RegenerateDayOnce) reasons.Add(RefusalReason.RegenerationDisabled);
+        else if (RegenerationUsed) reasons.Add(RefusalReason.RegenerationAlreadyUsed);
+        if (Guild.MissionsAcceptedToday > 0) reasons.Add(RefusalReason.MissionsAlreadyEngaged);
+        return reasons;
+    }
+
+    /// <summary>
+    /// Redemande le tableau de la journée en cours : une seule fois par partie, uniquement si aucune mission n'est engagée ce jour,
+    /// au prix de la réputation (rules.game.regenerateDayReputationCost). Les offres remplacées expirent (historique conservé) ;
+    /// le nouveau tirage prolonge le flux seedé et utilise la réputation APRÈS paiement du coût. Un second appel est refusé sans mutation.
+    /// </summary>
+    public Result<Regeneration> RegenerateOffers()
+    {
+        var reasons = RegenerationCheck();
+        if (reasons.Count > 0) return Result<Regeneration>.Refused(reasons);
+
+        var rules = Data.Rules;
+        RegenerationUsed = true;
+        foreach (var offer in _offers.Where(o => o.Day == Guild.Day && o.State == OfferState.Available)) offer.State = OfferState.Expired;
+
+        var before = Guild.Reputation;
+        var after = Guild.ApplyReputation(-rules.RegenerationReputationCost, rules.ReputationMin, rules.ReputationMax);
+        Log(GameEventType.OffersRegenerated, $"Le tableau du jour {Guild.Day} est renouvelé (coût : {rules.RegenerationReputationCost} points de réputation).");
+        Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : renouvellement du tableau.");
+
+        var firstNew = _offers.Count;
+        PublishOffers($"d{Guild.Day}r");
+        return Result<Regeneration>.Success(new Regeneration(Guild.Day, _offers.Skip(firstNew).ToList(), before, after));
     }
 
     private FinalReport BuildReport()

@@ -10,7 +10,7 @@ public enum GameStatus { InProgress, Finished }
 
 public enum QuestState { Assigned, Succeeded, Failed }
 
-public enum GameEventType { GameStarted, OffersPublished, MissionAssigned, MissionResolved, ReputationChanged, DayEnded, EnergyRecovered, GameFinished }
+public enum GameEventType { GameStarted, OffersPublished, MissionAssigned, MissionResolved, ReputationChanged, DayEnded, EnergyRecovered, OffersRegenerated, GameFinished }
 
 public enum RefusalReason
 {
@@ -27,4 +27,7 @@ public enum RefusalReason
     QuestNotAssigned,
     PendingMissions,
     GameFinished,
+    RegenerationDisabled,
+    RegenerationAlreadyUsed,
+    MissionsAlreadyEngaged,
 }

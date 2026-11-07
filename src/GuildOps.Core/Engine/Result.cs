@@ -37,6 +37,9 @@ public static class RefusalMessages
         RefusalReason.QuestNotAssigned => "Cette mission n'est pas en cours (déjà résolue ?).",
         RefusalReason.PendingMissions => "Des missions engagées ne sont pas résolues : elles doivent l'être avant la fin de la journée.",
         RefusalReason.GameFinished => "La partie est terminée : recommencez pour rejouer.",
+        RefusalReason.RegenerationDisabled => "La régénération du tableau n'est pas activée dans les règles.",
+        RefusalReason.RegenerationAlreadyUsed => "La régénération du tableau a déjà été utilisée dans cette partie.",
+        RefusalReason.MissionsAlreadyEngaged => "Impossible de régénérer le tableau : une mission a déjà été engagée aujourd'hui.",
         _ => reason.ToString(),
     };
 }
@@ -78,3 +81,5 @@ public sealed record FinalReport(
     string Message);
 
 public sealed record DayTransition(int EndedDay, int? NewDay, IReadOnlyList<QuestOffer> NewOffers, FinalReport? Report);
+
+public sealed record Regeneration(int Day, IReadOnlyList<QuestOffer> NewOffers, int ReputationBefore, int ReputationAfter);

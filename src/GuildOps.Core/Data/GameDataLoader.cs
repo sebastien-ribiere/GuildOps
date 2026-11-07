@@ -99,6 +99,9 @@ public static partial class GameDataLoader
             game.GetProperty("maxMissionsPerDay").GetInt32(),
             game.GetProperty("days").GetInt32(),
             game.GetProperty("energyRegenerationAtDayStart").GetInt32(),
+            game.GetProperty("regenerateDayOnce").GetBoolean(),
+            // Champ AJOUTÉ à la copie locale du contrat (absent du JSON formateur) : voir docs/phase-b1-report.md.
+            game.GetProperty("regenerateDayReputationCost").GetInt32(),
             new VictoryConditions(
                 game.GetProperty("victory").GetProperty("minimumTreasuryCopper").GetInt32(),
                 game.GetProperty("victory").GetProperty("minimumReputation").GetInt32(),
@@ -125,6 +128,7 @@ public static partial class GameDataLoader
     {
         if (rules.CopperPerGold <= 0) throw new GameDataException("copperPerGold doit être > 0.");
         if (rules.OffersPerDay <= 0 || rules.MaxMissionsPerDay <= 0) throw new GameDataException("offersPerDay et maxMissionsPerDay doivent être > 0.");
+        if (rules.RegenerationReputationCost < 0) throw new GameDataException("regenerateDayReputationCost doit être >= 0.");
         if (rules.Days < 1 || rules.EnergyRegenerationAtDayStart < 0) throw new GameDataException("days doit être >= 1 et la régénération d'énergie >= 0.");
         if (rules.Victory.MinTreasuryCopper < 0 || rules.Victory.MinSucceededMissions < 0
             || rules.Victory.MinReputation < rules.ReputationMin || rules.Victory.MinReputation > rules.ReputationMax)

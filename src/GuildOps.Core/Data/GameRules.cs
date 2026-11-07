@@ -40,6 +40,8 @@ public sealed record GameRules(
     int MaxMissionsPerDay,
     int Days,
     int EnergyRegenerationAtDayStart,
+    bool RegenerateDayOnce,
+    int RegenerationReputationCost,
     VictoryConditions Victory,
     int ReputationMin,
     int ReputationMax,
