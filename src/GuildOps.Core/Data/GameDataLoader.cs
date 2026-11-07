@@ -14,15 +14,17 @@ public static partial class GameDataLoader
         ReadEmbedded("rules.v0.1.json"),
         ReadEmbedded("hero-balancing.v0.1.json"),
         ReadEmbedded("roster.v0.1.json"),
-        ReadEmbedded("quest-catalogue.v0.1.json"));
+        ReadEmbedded("quest-catalogue.v0.1.json"),
+        ReadEmbedded("storylets.v0.1.json"));
 
     public static GameData LoadFromDirectory(string directory) => Load(
         File.ReadAllText(Path.Combine(directory, "rules.v0.1.json")),
         File.ReadAllText(Path.Combine(directory, "hero-balancing.v0.1.json")),
         File.ReadAllText(Path.Combine(directory, "roster.v0.1.json")),
-        File.ReadAllText(Path.Combine(directory, "quest-catalogue.v0.1.json")));
+        File.ReadAllText(Path.Combine(directory, "quest-catalogue.v0.1.json")),
+        File.ReadAllText(Path.Combine(directory, "storylets.v0.1.json")));
 
-    public static GameData Load(string rulesJson, string balancingJson, string rosterJson, string catalogueJson)
+    public static GameData Load(string rulesJson, string balancingJson, string rosterJson, string catalogueJson, string storyletsJson)
     {
         try
         {
@@ -30,11 +32,13 @@ public static partial class GameDataLoader
             using var balancing = JsonDocument.Parse(balancingJson);
             using var roster = JsonDocument.Parse(rosterJson);
             using var catalogue = JsonDocument.Parse(catalogueJson);
+            using var storyletDoc = JsonDocument.Parse(storyletsJson);
 
             var gameRules = ParseRules(rules.RootElement);
             var heroes = ParseHeroes(balancing.RootElement, roster.RootElement, gameRules);
             var templates = ParseTemplates(catalogue.RootElement, gameRules);
-            return new GameData(gameRules, heroes, templates);
+            var (storylets, expiryDays) = ParseStorylets(storyletDoc.RootElement, heroes, templates);
+            return new GameData(gameRules, heroes, templates, storylets, expiryDays);
         }
         catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
         {
@@ -111,7 +115,9 @@ public static partial class GameDataLoader
             tiers, weights, order, categories,
             new ReputationDeltas(
                 delta.GetProperty("regularSuccess").GetInt32(), delta.GetProperty("communitySuccess").GetInt32(),
-                delta.GetProperty("regularFailure").GetInt32(), delta.GetProperty("communityFailure").GetInt32()),
+                delta.GetProperty("regularFailure").GetInt32(), delta.GetProperty("communityFailure").GetInt32(),
+                delta.GetProperty("collateralDamage").GetInt32(), delta.GetProperty("paidCompensation").GetInt32(),
+                delta.GetProperty("apology").GetInt32(), delta.GetProperty("denyComplaint").GetInt32()),
             new SuccessFormula(
                 res.GetProperty("baseSuccessPercent").GetInt32(), res.GetProperty("levelBonusPerAdditionalLevelPp").GetInt32(),
                 res.GetProperty("lowEnergyMultiple").GetInt32(), res.GetProperty("lowEnergyPenaltyPp").GetInt32(),
@@ -219,6 +225,49 @@ public static partial class GameDataLoader
         if (list.All(t => t.Id != rules.RecoveryTemplateId))
             throw new GameDataException($"Modèle de redressement « {rules.RecoveryTemplateId} » absent du catalogue.");
         return list;
+    }
+
+    private static (IReadOnlyList<Storylet>, int) ParseStorylets(JsonElement root, IReadOnlyList<HeroDefinition> heroes, IReadOnlyList<QuestTemplate> templates)
+    {
+        var expiry = root.GetProperty("complaintExpiryDays").GetInt32();
+        if (expiry < 1) throw new GameDataException("complaintExpiryDays doit être >= 1.");
+
+        var list = new List<Storylet>();
+        foreach (var e in root.GetProperty("storylets").EnumerateArray())
+        {
+            var id = e.GetProperty("id").GetString()!;
+            if (e.GetProperty("trigger").GetString() != "MissionResolved")
+                throw new GameDataException($"Storylet « {id} » : seul le déclencheur MissionResolved est géré.");
+            var p = e.GetProperty("probabilityPercent").GetInt32();
+            if (p is < 0 or > 100) throw new GameDataException($"Storylet « {id} » : probabilité hors 0..100.");
+
+            var c = e.GetProperty("conditions");
+            var heroIds = c.GetProperty("heroIds").EnumerateArray().Select(x => x.GetString()!).ToList();
+            var templateIds = c.GetProperty("templateIds").EnumerateArray().Select(x => x.GetString()!).ToList();
+            var unknownHero = heroIds.FirstOrDefault(h => heroes.All(x => x.Id != h));
+            if (unknownHero is not null) throw new GameDataException($"Storylet « {id} » : héros inconnu « {unknownHero} ».");
+            var unknownTemplate = templateIds.FirstOrDefault(t => templates.All(x => x.Id != t));
+            if (unknownTemplate is not null) throw new GameDataException($"Storylet « {id} » : modèle inconnu « {unknownTemplate} ».");
+
+            var outcome = c.GetProperty("outcome").GetString() switch
+            {
+                "success" => OutcomeFilter.Success,
+                "failure" => OutcomeFilter.Failure,
+                "any" => OutcomeFilter.Any,
+                var o => throw new GameDataException($"Storylet « {id} » : issue inconnue « {o} »."),
+            };
+            var incident = e.GetProperty("incident");
+            var cost = incident.GetProperty("repairCostCopper").GetInt32();
+            if (cost < 0) throw new GameDataException($"Storylet « {id} » : coût de réparation négatif.");
+            var labels = incident.GetProperty("labels");
+
+            list.Add(new Storylet(id, e.GetProperty("title").GetString()!, e.GetProperty("text").GetString()!,
+                e.GetProperty("priority").GetInt32(), p,
+                new StoryletConditions(outcome, heroIds, c.GetProperty("categories").EnumerateArray().Select(x => ParseCategory(x.GetString()!)).ToList(), templateIds),
+                cost, new ChoiceLabels(labels.GetProperty("repair").GetString()!, labels.GetProperty("apologize").GetString()!, labels.GetProperty("deny").GetString()!)));
+        }
+        if (list.Select(s => s.Id).Distinct().Count() != list.Count) throw new GameDataException("Identifiants de storylets dupliqués.");
+        return (list, expiry);
     }
 
     private static QuestCategory ParseCategory(string s) => s switch

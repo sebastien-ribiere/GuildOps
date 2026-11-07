@@ -1,14 +1,23 @@
 using GuildOps.Core.Data;
+using GuildOps.Core.Domain;
 using GuildOps.Core.Engine;
 using GuildOps.Core.Randomness;
 
 namespace GuildOps.Tests;
 
-/// <summary>RNG scripté : renvoie des valeurs fixes, puis 0. Permet de forcer succès/échec.</summary>
+/// <summary>
+/// RNG scripté : renvoie des valeurs fixes, puis (script épuisé) la valeur maximale, c'est-à-dire "jamais" pour un test
+/// de probabilité : aucun storylet ne se déclenche sans que le test l'ait demandé. <see cref="Calls"/> compte les tirages consommés.
+/// </summary>
 internal sealed class ScriptedRandom(params int[] values) : ISeededRandom
 {
     private int _i;
-    public int NextInt(int maxExclusive) => _i < values.Length ? values[_i++] % maxExclusive : 0;
+    public int Calls { get; private set; }
+    public int NextInt(int maxExclusive)
+    {
+        Calls++;
+        return _i < values.Length ? values[_i++] % maxExclusive : maxExclusive - 1;
+    }
 }
 
 internal static class TestSupport
@@ -20,13 +29,28 @@ internal static class TestSupport
     public static GameSession NewSession(long seed = Seed) => GameSession.Start(Data, seed);
 
     /// <summary>Session dont les tirages de résolution sont forcés (la génération du jour 1 utilise le vrai RNG semé).</summary>
-    public static GameSession NewSessionWithRolls(params int[] rolls)
+    public static GameSession NewSessionWithRolls(params int[] rolls) => NewSessionWithScript(out _, rolls);
+
+    public static GameSession NewSessionWithScript(out ScriptedRandom script, params int[] rolls)
     {
         var rng = new OverridableRandom(new SeededRandom(Seed));
         var session = GameSession.Start(Data, Seed, _ => rng);
-        rng.Override = new ScriptedRandom(rolls);
+        script = new ScriptedRandom(rolls);
+        rng.Override = script;
         return session;
     }
+
+    /// <summary>Session au RNG réel dont on peut remplacer le flux plus tard (<c>rng.Override = new ScriptedRandom(...)</c>).</summary>
+    public static GameSession NewSessionDeferred(out OverridableRandom rng)
+    {
+        var r = new OverridableRandom(new SeededRandom(Seed));
+        rng = r;
+        return GameSession.Start(Data, Seed, _ => r);
+    }
+
+    /// <summary>Publie une offre arbitraire (cas que le tirage seedé ne produit pas).</summary>
+    public static QuestOffer Inject(GameSession s, string templateId) =>
+        new QuestOfferProbe(s).Inject(s.Data.Templates.Single(t => t.Id == templateId));
 
     /// <summary>Trouve un couple (offre, héros) admissible, de préférence pour la catégorie demandée.</summary>
     public static (string OfferId, string HeroId) FindAssignable(GameSession s, Func<Core.Domain.QuestOffer, bool>? filter = null)

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "0.1.0",
+  "status": "proposition-non-validee",
+  "notes": "Deux storylets de la premiere tranche (E01 et E02 de docs/10). Probabilites, couts et delai d'expiration decides avec le formateur le 2026-11-07 (sessions de travail), non encore consignes dans le depot formateur. 'Le blason royal accroche a l'envers' est reserve au TP final et n'est PAS ici.",
+  "complaintExpiryDays": 2,
+  "storylets": [
+    {
+      "id": "E01",
+      "title": "Le mur porteur",
+      "trigger": "MissionResolved",
+      "priority": 10,
+      "probabilityPercent": 40,
+      "conditions": {
+        "outcome": "success",
+        "heroIds": [ "gerard-dev" ],
+        "categories": [ "corvee", "village" ],
+        "templateIds": []
+      },
+      "text": "Gérard a vaincu les rats. Et la cave. Et le mur porteur. La taverne réclame réparation.",
+      "incident": {
+        "repairCostCopper": 80,
+        "labels": {
+          "repair": "Payer les réparations",
+          "apologize": "Présenter des excuses",
+          "deny": "Nier : le mur était déjà fissuré"
+        }
+      }
+    },
+    {
+      "id": "E02",
+      "title": "Le routeur du dragon",
+      "trigger": "MissionResolved",
+      "priority": 20,
+      "probabilityPercent": 60,
+      "conditions": {
+        "outcome": "failure",
+        "heroIds": [],
+        "categories": [],
+        "templateIds": [ "wifi-du-dragon" ]
+      },
+      "text": "Le dragon a retrouvé le signal, mais pas son mot de passe. Son souffle a grillé le routeur, et il vous en tient responsable.",
+      "incident": {
+        "repairCostCopper": 120,
+        "labels": {
+          "repair": "Rembourser le routeur",
+          "apologize": "Présenter des excuses",
+          "deny": "Nier : le dragon n'avait qu'à lire la notice"
+        }
+      }
+    }
+  ]
+}

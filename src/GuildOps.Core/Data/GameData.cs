@@ -6,6 +6,8 @@ namespace GuildOps.Core.Data;
 public sealed record GameData(
     GameRules Rules,
     IReadOnlyList<HeroDefinition> Heroes,
-    IReadOnlyList<QuestTemplate> Templates);
+    IReadOnlyList<QuestTemplate> Templates,
+    IReadOnlyList<Storylet> Storylets,
+    int ComplaintExpiryDays);
 
 public sealed class GameDataException(string message) : Exception(message);

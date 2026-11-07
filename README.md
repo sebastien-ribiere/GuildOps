@@ -6,7 +6,7 @@ Jeu de gestion de guilde fantasy (Godot 4.7.2 .NET, C# / .NET 10), 100 % hors li
 - `src/GuildOps.Core` — moteur C# pur (aucune dépendance Godot). Données JSON embarquées depuis `game-data/`.
 - `src/GuildOps.Game` — projet Godot (UI seulement, aucune règle métier). Ouvrir avec l'éditeur **Godot 4.7.2 stable .NET** (pas l'édition standard).
 - `tests/GuildOps.Tests` — xUnit.
-- `game-data/` — `rules`, `hero-balancing`, `roster` (copies du contrat V0.1) et `quest-catalogue` (**proposé, non validé**).
+- `game-data/` — `rules`, `hero-balancing`, `roster` (copies du contrat V0.1), `quest-catalogue` et `storylets` (**proposés, non validés**).
 
 ## Commandes
 ```bash

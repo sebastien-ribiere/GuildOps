@@ -17,7 +17,9 @@ public sealed class GameSession
     private readonly List<QuestOffer> _offers = [];
     private readonly List<Quest> _quests = [];
     private readonly List<GameEvent> _events = [];
+    private readonly List<Complaint> _complaints = [];
     private int _questCounter;
+    private int _complaintCounter;
 
     private GameSession(GameData data, long seed, Func<long, ISeededRandom> rngFactory, ITraitEffects traits)
     {
@@ -43,6 +45,8 @@ public sealed class GameSession
     public IReadOnlyList<QuestOffer> Offers => _offers;
     /// <summary>Tableau actif de la journée en cours (les offres remplacées par une régénération restent dans <see cref="Offers"/>).</summary>
     public IReadOnlyList<QuestOffer> CurrentOffers => _offers.Where(o => o.Day == Guild.Day && o.State != OfferState.Expired).ToList();
+    public IReadOnlyList<Complaint> Complaints => _complaints;
+    public IReadOnlyList<Complaint> OpenComplaints => _complaints.Where(c => c.State == ComplaintState.Open).ToList();
     public GameStatus Status { get; private set; }
     /// <summary>Vrai une fois la régénération (unique par partie) consommée.</summary>
     public bool RegenerationUsed { get; private set; }
@@ -63,6 +67,8 @@ public sealed class GameSession
         _quests.Clear();
         _events.Clear();
         _questCounter = 0;
+        _complaintCounter = 0;
+        _complaints.Clear();
         Status = GameStatus.InProgress;
         RegenerationUsed = false;
         Report = null;
@@ -160,8 +166,10 @@ public sealed class GameSession
             $"{(success ? $"prime {Money(reward)}" : "aucune prime")}, énergie -{template.EnergyCost}.");
         Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({delta:+#;-#;0}) : {reason}.");
 
+        var incident = TryTriggerIncident(quest, hero, success);
+
         return Result<MissionOutcome>.Success(new MissionOutcome(
-            quest.Id, hero.Id, success, roll, chance.Final, reward, template.EnergyCost, before, after, reason));
+            quest.Id, hero.Id, success, roll, chance.Final, reward, template.EnergyCost, before, after, reason, incident));
     }
 
     /// <summary>
@@ -176,6 +184,7 @@ public sealed class GameSession
 
         var rules = Data.Rules;
         var ended = Guild.Day;
+        ExpireComplaints(ended);
         foreach (var offer in _offers.Where(o => o.Day == ended && o.State == OfferState.Available)) offer.State = OfferState.Expired;
         Log(GameEventType.DayEnded, $"Fin du jour {ended}.");
 
@@ -243,7 +252,89 @@ public sealed class GameSession
         var message = success
             ? $"Redressement réussi ! Le conseil royal est satisfait ({details})."
             : $"Bilan inachevé : le conseil royal vous accorde un sursis ({details}). Vous pouvez recommencer.";
-        return new FinalReport(success, Guild.Reputation, Guild.TreasuryCopper, Guild.MissionsSucceeded, repOk, treasuryOk, missionsOk, message);
+        var open = OpenComplaints.Count;
+        if (open > 0) message += $" Réclamations encore ouvertes : {open} (sans effet sur le bilan).";
+        return new FinalReport(success, Guild.Reputation, Guild.TreasuryCopper, Guild.MissionsSucceeded, repOk, treasuryOk, missionsOk, message, open);
+    }
+
+    // Ordre du contrat : mission résolue (prime, énergie, réputation) → dommage collatéral et sa réputation → ouverture du dossier.
+    private IncidentReport? TryTriggerIncident(Quest quest, Hero hero, bool success)
+    {
+        var storylet = StoryletSelector.Select(Data.Storylets, new MissionContext(hero.Id, quest.Template, success), _rng);
+        if (storylet is null) return null;
+
+        var rules = Data.Rules;
+        var before = Guild.Reputation;
+        var after = Guild.ApplyReputation(rules.Deltas.CollateralDamage, rules.ReputationMin, rules.ReputationMax);
+        var complaint = new Complaint($"c{++_complaintCounter}", quest.Id, storylet, Guild.Day, Guild.Day + Data.ComplaintExpiryDays);
+        _complaints.Add(complaint);
+
+        Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : dommage collatéral ({storylet.Title}).");
+        Log(GameEventType.ComplaintOpened,
+            $"Réclamation {complaint.Id} — {storylet.Title} : {storylet.Text} (réparation : {Money(complaint.RepairCostCopper)} ; à traiter avant la fin du jour {complaint.ExpiresAfterDay}).");
+        return new IncidentReport(storylet.Id, storylet.Title, storylet.Text, complaint.Id, after - before);
+    }
+
+    private int DeltaFor(ComplaintChoice choice) => choice switch
+    {
+        ComplaintChoice.Repair => Data.Rules.Deltas.PaidCompensation,
+        ComplaintChoice.Apologize => Data.Rules.Deltas.Apology,
+        _ => Data.Rules.Deltas.DenyComplaint,
+    };
+
+    /// <summary>Requête pure : raisons de refus d'un choix sur une réclamation (liste vide si faisable).</summary>
+    public IReadOnlyList<RefusalReason> ComplaintCheck(string complaintId, ComplaintChoice choice)
+    {
+        if (Status == GameStatus.Finished) return [RefusalReason.GameFinished];
+        var complaint = _complaints.FirstOrDefault(c => c.Id == complaintId);
+        if (complaint is null) return [RefusalReason.UnknownComplaint];
+        if (complaint.State != ComplaintState.Open) return [RefusalReason.ComplaintNotOpen];
+        if (choice == ComplaintChoice.Repair && Guild.TreasuryCopper < complaint.RepairCostCopper) return [RefusalReason.NotEnoughTreasury];
+        return [];
+    }
+
+    /// <summary>
+    /// Traite une réclamation, une seule fois : débit éventuel et variation de réputation appliqués ensemble ou pas du tout.
+    /// Ne requalifie jamais la mission ; une réparation impayable est refusée sans mutation (excuses et refus restent possibles).
+    /// </summary>
+    public Result<ComplaintOutcome> ResolveComplaint(string complaintId, ComplaintChoice choice)
+    {
+        var reasons = ComplaintCheck(complaintId, choice);
+        if (reasons.Count > 0) return Result<ComplaintOutcome>.Refused(reasons);
+
+        var rules = Data.Rules;
+        var complaint = _complaints.First(c => c.Id == complaintId);
+        var cost = choice == ComplaintChoice.Repair ? complaint.RepairCostCopper : 0;
+        Guild.Debit(cost);
+        var before = Guild.Reputation;
+        var after = Guild.ApplyReputation(DeltaFor(choice), rules.ReputationMin, rules.ReputationMax);
+        complaint.State = ComplaintState.Resolved;
+        complaint.Choice = choice;
+
+        var label = choice switch
+        {
+            ComplaintChoice.Repair => complaint.Storylet.Labels.Repair,
+            ComplaintChoice.Apologize => complaint.Storylet.Labels.Apologize,
+            _ => complaint.Storylet.Labels.Deny,
+        };
+        var message = $"Réclamation {complaint.Id} close : {label} (coût {Money(cost)}).";
+        Log(GameEventType.ComplaintResolved, message);
+        Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : réclamation {complaint.Id}.");
+        return Result<ComplaintOutcome>.Success(new ComplaintOutcome(complaint.Id, choice, cost, before, after, message));
+    }
+
+    private void ExpireComplaints(int endedDay)
+    {
+        var rules = Data.Rules;
+        foreach (var complaint in _complaints.Where(c => c.State == ComplaintState.Open && endedDay >= c.ExpiresAfterDay))
+        {
+            var before = Guild.Reputation;
+            var after = Guild.ApplyReputation(rules.Deltas.DenyComplaint, rules.ReputationMin, rules.ReputationMax);
+            complaint.State = ComplaintState.Expired;
+            complaint.Choice = ComplaintChoice.Deny;
+            Log(GameEventType.ComplaintExpired, $"Réclamation {complaint.Id} restée sans réponse : traitée comme un refus.");
+            Log(GameEventType.ReputationChanged, $"Réputation {before} → {after} ({after - before:+#;-#;0}) : réclamation {complaint.Id} expirée.");
+        }
     }
 
     public string Money(int copper) => CurrencyFormat.Format(copper, Data.Rules.CopperPerGold);

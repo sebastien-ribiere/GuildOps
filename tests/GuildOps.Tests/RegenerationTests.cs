@@ -146,7 +146,8 @@ public class RegenerationTests
         var data = GameDataLoader.Load(rules,
             File.ReadAllText(Path.Combine(dir, "hero-balancing.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")),
-            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json")));
+            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json")),
+            File.ReadAllText(Path.Combine(dir, "storylets.v0.1.json")));
         var s = GameSession.Start(data, Seed);
         Assert.Contains(RefusalReason.RegenerationDisabled, s.RegenerateOffers().Reasons);
     }
@@ -159,7 +160,8 @@ public class RegenerationTests
         Assert.Throws<GameDataException>(() => GameDataLoader.Load(rules,
             File.ReadAllText(Path.Combine(dir, "hero-balancing.v0.1.json")),
             File.ReadAllText(Path.Combine(dir, "roster.v0.1.json")),
-            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json"))));
+            File.ReadAllText(Path.Combine(dir, "quest-catalogue.v0.1.json")),
+            File.ReadAllText(Path.Combine(dir, "storylets.v0.1.json"))));
     }
 
     [Fact]
