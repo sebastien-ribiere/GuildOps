@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "0.1.0",
+  "purpose": "Valeurs de référence du prototype. Noms et traits narratifs décrits dans roster.v0.1.json.",
+  "levelsAndCosts": [
+    {
+      "heroId": "jean-michel-sre",
+      "level": 3,
+      "startingEnergy": 85,
+      "baseCostCopper": 25,
+      "traitKey": "investigation-automation"
+    },
+    {
+      "heroId": "gerard-dev",
+      "level": 3,
+      "startingEnergy": 90,
+      "baseCostCopper": 22,
+      "traitKey": "rapid-fix"
+    },
+    {
+      "heroId": "merlinda-qa",
+      "level": 3,
+      "startingEnergy": 80,
+      "baseCostCopper": 30,
+      "traitKey": "quality-gate"
+    },
+    {
+      "heroId": "borborygme-release",
+      "level": 2,
+      "startingEnergy": 95,
+      "baseCostCopper": 16,
+      "traitKey": "rapid-delivery"
+    },
+    {
+      "heroId": "archibald-platform",
+      "level": 3,
+      "startingEnergy": 80,
+      "baseCostCopper": 28,
+      "traitKey": "repeatability"
+    },
+    {
+      "heroId": "prudence-productowner",
+      "level": 2,
+      "startingEnergy": 90,
+      "baseCostCopper": 14,
+      "traitKey": "value-analysis"
+    },
+    {
+      "heroId": "hermine-secops",
+      "level": 4,
+      "startingEnergy": 75,
+      "baseCostCopper": 36,
+      "traitKey": "risk-prevention"
+    },
+    {
+      "heroId": "gaston-finops",
+      "level": 2,
+      "startingEnergy": 90,
+      "baseCostCopper": 12,
+      "traitKey": "cost-control"
+    },
+    {
+      "heroId": "alice-ux",
+      "level": 2,
+      "startingEnergy": 90,
+      "baseCostCopper": 10,
+      "traitKey": "customer-care"
+    },
+    {
+      "heroId": "leon-dataops",
+      "level": 3,
+      "startingEnergy": 80,
+      "baseCostCopper": 25,
+      "traitKey": "forecasting"
+    },
+    {
+      "heroId": "zelie-cloudops",
+      "level": 4,
+      "startingEnergy": 70,
+      "baseCostCopper": 40,
+      "traitKey": "elastic-capacity"
+    },
+    {
+      "heroId": "clovis-scrum",
+      "level": 2,
+      "startingEnergy": 85,
+      "baseCostCopper": 12,
+      "traitKey": "coordination"
+    }
+  ],
+  "mechanicalTraitImplementation": {
+    "firstVerticalSlice": "traits visibles en UI, sans bonus chiffrés; moteur déjà extensible",
+    "completeV0": "traits activés par familles de modificateurs génériques avec tests; pas 12 branches métier indépendantes",
+    "jeanMichelSre": "effet d'observation puis automatisation attendu après la première tranche, coût initial et bénéfice réutilisable, à éprouver en tests",
+    "neverReadTraitsFromGodotScene": true
+  }
+}

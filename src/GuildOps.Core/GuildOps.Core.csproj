@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>GuildOps.Core</RootNamespace>
+  </PropertyGroup>
+  <!-- Données de jeu embarquées : une seule source de vérité (game-data/), aucun accès disque ni réseau à l'exécution. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../game-data/*.json" LogicalName="GuildOps.GameData.%(Filename)%(Extension)" />
+    <InternalsVisibleTo Include="GuildOps.Tests" />
+  </ItemGroup>
+</Project>
