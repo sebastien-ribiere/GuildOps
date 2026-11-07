@@ -39,7 +39,12 @@ public sealed class GameSession
     public long Seed { get; }
     public Guild Guild { get; private set; }
     public IReadOnlyList<Hero> Heroes => _heroes;
+    /// <summary>Historique complet des offres de toutes les journées (les anciennes ne sont jamais modifiées après expiration).</summary>
     public IReadOnlyList<QuestOffer> Offers => _offers;
+    /// <summary>Offres publiées pour la journée en cours.</summary>
+    public IReadOnlyList<QuestOffer> CurrentOffers => _offers.Where(o => o.Day == Guild.Day).ToList();
+    public GameStatus Status { get; private set; }
+    public FinalReport? Report { get; private set; }
     public IReadOnlyList<Quest> Quests => _quests;
     public IReadOnlyList<GameEvent> Events => _events;
     public string ReputationTierId => Data.Rules.TierFor(Guild.Reputation).Id;
@@ -56,6 +61,8 @@ public sealed class GameSession
         _quests.Clear();
         _events.Clear();
         _questCounter = 0;
+        Status = GameStatus.InProgress;
+        Report = null;
         _heroes.AddRange(Data.Heroes.Select(d => new Hero(d)));
         Guild = new Guild(rules.InitialTreasuryCopper, rules.InitialReputation, rules.InitialDay);
 
@@ -73,6 +80,7 @@ public sealed class GameSession
 
     public AssignmentCheck Preview(string offerId, string heroId)
     {
+        if (Status == GameStatus.Finished) return Refuse(RefusalReason.GameFinished);
         var offer = _offers.FirstOrDefault(o => o.Id == offerId);
         if (offer is null) return Refuse(RefusalReason.UnknownOffer);
         var hero = _heroes.FirstOrDefault(h => h.Id == heroId);
@@ -114,6 +122,7 @@ public sealed class GameSession
 
     public Result<MissionOutcome> Resolve(string questId)
     {
+        if (Status == GameStatus.Finished) return Result<MissionOutcome>.Refused([RefusalReason.GameFinished]);
         var quest = _quests.FirstOrDefault(q => q.Id == questId);
         if (quest is null) return Result<MissionOutcome>.Refused([RefusalReason.UnknownQuest]);
         if (quest.State != QuestState.Assigned) return Result<MissionOutcome>.Refused([RefusalReason.QuestNotAssigned]);
@@ -150,6 +159,53 @@ public sealed class GameSession
 
         return Result<MissionOutcome>.Success(new MissionOutcome(
             quest.Id, hero.Id, success, roll, chance.Final, reward, template.EnergyCost, before, after, reason));
+    }
+
+    /// <summary>
+    /// Clôt la journée. Refusée (sans mutation) si une mission engagée n'est pas résolue. Sinon : les offres non acceptées
+    /// expirent ; après la dernière journée, le bilan est établi ; sinon on passe au jour suivant (énergie récupérée,
+    /// compteur quotidien remis à zéro, nouvelles offres générées sur la réputation ACTUELLE).
+    /// </summary>
+    public Result<DayTransition> EndDay()
+    {
+        if (Status == GameStatus.Finished) return Result<DayTransition>.Refused([RefusalReason.GameFinished]);
+        if (_quests.Any(q => q.State == QuestState.Assigned)) return Result<DayTransition>.Refused([RefusalReason.PendingMissions]);
+
+        var rules = Data.Rules;
+        var ended = Guild.Day;
+        foreach (var offer in _offers.Where(o => o.Day == ended && o.State == OfferState.Available)) offer.State = OfferState.Expired;
+        Log(GameEventType.DayEnded, $"Fin du jour {ended}.");
+
+        if (ended >= rules.Days)
+        {
+            Report = BuildReport();
+            Status = GameStatus.Finished;
+            Log(GameEventType.GameFinished, Report.Message);
+            return Result<DayTransition>.Success(new DayTransition(ended, null, [], Report));
+        }
+
+        Guild.Day = ended + 1;
+        Guild.MissionsAcceptedToday = 0;
+        foreach (var hero in _heroes) hero.Energy = Math.Min(rules.MaxEnergy, hero.Energy + rules.EnergyRegenerationAtDayStart);
+        Log(GameEventType.EnergyRecovered, $"Repos : chaque aventurier récupère jusqu'à {rules.EnergyRegenerationAtDayStart} points d'énergie (maximum {rules.MaxEnergy}).");
+        PublishOffers();
+        return Result<DayTransition>.Success(new DayTransition(ended, Guild.Day, CurrentOffers, null));
+    }
+
+    private FinalReport BuildReport()
+    {
+        var v = Data.Rules.Victory;
+        var repOk = Guild.Reputation >= v.MinReputation;
+        var treasuryOk = Guild.TreasuryCopper >= v.MinTreasuryCopper;
+        var missionsOk = Guild.MissionsSucceeded >= v.MinSucceededMissions;
+        var success = repOk && treasuryOk && missionsOk;
+
+        var details = $"réputation {Guild.Reputation}/{v.MinReputation}, trésorerie {Money(Guild.TreasuryCopper)}/{Money(v.MinTreasuryCopper)}, " +
+                      $"missions réussies {Guild.MissionsSucceeded}/{v.MinSucceededMissions}";
+        var message = success
+            ? $"Redressement réussi ! Le conseil royal est satisfait ({details})."
+            : $"Bilan inachevé : le conseil royal vous accorde un sursis ({details}). Vous pouvez recommencer.";
+        return new FinalReport(success, Guild.Reputation, Guild.TreasuryCopper, Guild.MissionsSucceeded, repOk, treasuryOk, missionsOk, message);
     }
 
     public string Money(int copper) => CurrencyFormat.Format(copper, Data.Rules.CopperPerGold);

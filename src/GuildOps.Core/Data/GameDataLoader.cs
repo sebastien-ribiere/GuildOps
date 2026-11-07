@@ -97,6 +97,12 @@ public static partial class GameDataLoader
             r.GetProperty("heroes").GetProperty("maxEnergy").GetInt32(),
             game.GetProperty("offersPerDay").GetInt32(),
             game.GetProperty("maxMissionsPerDay").GetInt32(),
+            game.GetProperty("days").GetInt32(),
+            game.GetProperty("energyRegenerationAtDayStart").GetInt32(),
+            new VictoryConditions(
+                game.GetProperty("victory").GetProperty("minimumTreasuryCopper").GetInt32(),
+                game.GetProperty("victory").GetProperty("minimumReputation").GetInt32(),
+                game.GetProperty("victory").GetProperty("minimumSucceededMissions").GetInt32()),
             rep.GetProperty("min").GetInt32(),
             rep.GetProperty("max").GetInt32(),
             tiers, weights, order, categories,
@@ -119,6 +125,10 @@ public static partial class GameDataLoader
     {
         if (rules.CopperPerGold <= 0) throw new GameDataException("copperPerGold doit être > 0.");
         if (rules.OffersPerDay <= 0 || rules.MaxMissionsPerDay <= 0) throw new GameDataException("offersPerDay et maxMissionsPerDay doivent être > 0.");
+        if (rules.Days < 1 || rules.EnergyRegenerationAtDayStart < 0) throw new GameDataException("days doit être >= 1 et la régénération d'énergie >= 0.");
+        if (rules.Victory.MinTreasuryCopper < 0 || rules.Victory.MinSucceededMissions < 0
+            || rules.Victory.MinReputation < rules.ReputationMin || rules.Victory.MinReputation > rules.ReputationMax)
+            throw new GameDataException("Conditions de victoire invalides.");
         if (rules.InitialTreasuryCopper < 0) throw new GameDataException("Trésorerie initiale négative.");
         if (rules.InitialReputation < rules.ReputationMin || rules.InitialReputation > rules.ReputationMax)
             throw new GameDataException("Réputation initiale hors plage.");

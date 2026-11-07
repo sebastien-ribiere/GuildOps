@@ -24,6 +24,7 @@ public partial class Main : Control
     private RichTextLabel _journal = null!;
     private Button _assignButton = null!;
     private Button _resolveButton = null!;
+    private Button _endDayButton = null!;
     private Label _feedback = null!;
 
     public override void _Ready()
@@ -62,7 +63,7 @@ public partial class Main : Control
 
         var middle = Column("Tableau des contrats", out _offerList, 1.0f);
         columns.AddChild(middle);
-        _offerList.ItemSelected += i => { _selectedOfferId = _session.Offers[(int)i].Id; Refresh(); };
+        _offerList.ItemSelected += i => { _selectedOfferId = _session.CurrentOffers[(int)i].Id; Refresh(); };
 
         var right = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.2f };
         columns.AddChild(right);
@@ -80,6 +81,10 @@ public partial class Main : Control
         _resolveButton = new Button { Text = "Résoudre la mission sélectionnée" };
         _resolveButton.Pressed += OnResolve;
         right.AddChild(_resolveButton);
+
+        _endDayButton = new Button { Text = "Terminer la journée" };
+        _endDayButton.Pressed += OnEndDay;
+        right.AddChild(_endDayButton);
 
         _feedback = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
         root.AddChild(_feedback);
@@ -117,10 +122,21 @@ public partial class Main : Control
         Refresh();
     }
 
+    private void OnEndDay()
+    {
+        var result = _session.EndDay();
+        if (!result.Ok) { _feedback.Text = "Refusé : " + result.Message; Refresh(); return; }
+        _selectedOfferId = null;
+        _feedback.Text = result.Value!.Report is { } report
+            ? report.Message
+            : $"Jour {result.Value.NewDay} : énergie récupérée, {result.Value.NewOffers.Count} nouvelles offres.";
+        Refresh();
+    }
+
     private void Refresh()
     {
         var g = _session.Guild;
-        _status.Text = $"Jour {g.Day}   |   Trésorerie : {_session.Money(g.TreasuryCopper)}   |   Réputation : {g.Reputation}/100 ({_session.ReputationTierId})   |   " +
+        _status.Text = $"Jour {g.Day}/{_session.Data.Rules.Days}   |   Trésorerie : {_session.Money(g.TreasuryCopper)}   |   Réputation : {g.Reputation}/100 ({_session.ReputationTierId})   |   " +
                        $"Missions engagées aujourd'hui : {g.MissionsAcceptedToday}/{_session.Data.Rules.MaxMissionsPerDay}   |   Graine : {_session.Seed}";
 
         var offer = _session.Offers.FirstOrDefault(o => o.Id == _selectedOfferId);
@@ -137,9 +153,10 @@ public partial class Main : Control
         }
 
         _offerList.Clear();
-        for (var i = 0; i < _session.Offers.Count; i++)
+        var current = _session.CurrentOffers;
+        for (var i = 0; i < current.Count; i++)
         {
-            var o = _session.Offers[i];
+            var o = current[i];
             var t = o.Template;
             _offerList.AddItem($"[{t.Category}] {t.Title} — niv.{t.MinLevel} {t.Skill} | énergie {t.EnergyCost} | prime {_session.Money(t.RewardCopper)}" +
                                (o.State == OfferState.Accepted ? " (acceptée)" : ""));
@@ -158,8 +175,11 @@ public partial class Main : Control
 
         RefreshDetail(offer);
         var quest = _session.Quests.FirstOrDefault(q => q.Id == _selectedQuestId);
-        _resolveButton.Disabled = quest is null || quest.State != QuestState.Assigned;
-        _assignButton.Disabled = offer is null || _selectedHeroId is null || !_session.Preview(offer.Id, _selectedHeroId).CanAssign;
+        var finished = _session.Status == GameStatus.Finished;
+        _resolveButton.Disabled = finished || quest is null || quest.State != QuestState.Assigned;
+        _endDayButton.Disabled = finished;
+        _endDayButton.Text = _session.Guild.Day >= _session.Data.Rules.Days ? "Terminer la journée et passer au bilan royal" : "Terminer la journée";
+        _assignButton.Disabled = finished || offer is null || _selectedHeroId is null || !_session.Preview(offer.Id, _selectedHeroId).CanAssign;
         _journal.Text = string.Join("\n", _session.Events.Select(e => $"#{e.Sequence} (J{e.Day}) {e.Message}"));
     }
 
@@ -179,6 +199,10 @@ public partial class Main : Control
             if (check.Chance is { } c)
                 text += $"Chance de réussite : [b]{c.Final} %[/b]  (base {c.Base} − risque {c.RiskPenalty} + niveau {c.LevelBonus:+#;-#;0} + trait {c.TraitModifier:+#;-#;0} − fatigue {c.LowEnergyPenalty})\n";
             text += check.CanAssign ? "[color=green]Affectation possible.[/color]" : $"[color=red]Impossible : {check.Message}[/color]";
+        }
+        else if (hero is null && offer is null && _session.Report is { } report)
+        {
+            text = $"[b]{(report.Success ? "Redressement réussi" : "Bilan inachevé")}[/b]\n{report.Message}";
         }
         else if (hero is null && offer is null)
         {

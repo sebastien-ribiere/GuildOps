@@ -6,9 +6,11 @@ public enum QuestCategory { Corvee, Village, Aventure, Notable, Royale }
 
 public enum OfferState { Available, Accepted, Expired }
 
+public enum GameStatus { InProgress, Finished }
+
 public enum QuestState { Assigned, Succeeded, Failed }
 
-public enum GameEventType { GameStarted, OffersPublished, MissionAssigned, MissionResolved, ReputationChanged }
+public enum GameEventType { GameStarted, OffersPublished, MissionAssigned, MissionResolved, ReputationChanged, DayEnded, EnergyRecovered, GameFinished }
 
 public enum RefusalReason
 {
@@ -23,4 +25,6 @@ public enum RefusalReason
     NotEnoughTreasury,
     DailyLimitReached,
     QuestNotAssigned,
+    PendingMissions,
+    GameFinished,
 }
