@@ -3,9 +3,30 @@ using GuildOps.Core.Engine;
 
 namespace GuildOps.Tests;
 
+/// <summary>Réaction d'un joueur automatique aux réclamations ouvertes.</summary>
+internal enum ComplaintPolicy
+{
+    /// <summary>Ne répond jamais : chaque réclamation expire (−2 chacune, en plus du dommage collatéral).</summary>
+    Ignore,
+    /// <summary>Présente toujours des excuses (gratuit, +1).</summary>
+    Apologize,
+    /// <summary>Répare si la caisse le permet (−coût, +3), sinon présente des excuses.</summary>
+    RepairIfPossible,
+}
+
 /// <summary>Joueurs automatiques déterministes, pour tester des parties entières sans UI.</summary>
 internal static class Bots
 {
+    public static void HandleComplaints(GameSession s, ComplaintPolicy policy)
+    {
+        if (policy == ComplaintPolicy.Ignore) return;
+        foreach (var c in s.OpenComplaints)
+        {
+            if (policy == ComplaintPolicy.RepairIfPossible && s.ResolveComplaint(c.Id, ComplaintChoice.Repair).Ok) continue;
+            Assert.True(s.ResolveComplaint(c.Id, ComplaintChoice.Apologize).Ok);
+        }
+    }
+
     /// <summary>Ne fait jamais rien : passe les 7 jours.</summary>
     public static void Idle(GameSession s)
     {
@@ -16,7 +37,7 @@ internal static class Bots
     /// Glouton : à chaque jour, engage jusqu'à 3 missions en maximisant (chance × prime − engagement), résout, puis termine la journée.
     /// <paramref name="afterStep"/> est appelé après chaque commande pour vérifier des invariants.
     /// </summary>
-    public static void Greedy(GameSession s, Action<GameSession>? afterStep = null)
+    public static void Greedy(GameSession s, Action<GameSession>? afterStep = null, ComplaintPolicy policy = ComplaintPolicy.Ignore)
     {
         while (s.Status == GameStatus.InProgress)
         {
@@ -34,6 +55,7 @@ internal static class Bots
                 afterStep?.Invoke(s);
                 Assert.True(s.Resolve(assigned.Value!.Id).Ok);
                 afterStep?.Invoke(s);
+                HandleComplaints(s, policy);
             }
             Assert.True(s.EndDay().Ok);
             afterStep?.Invoke(s);
