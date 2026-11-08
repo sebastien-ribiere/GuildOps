@@ -1,0 +1,113 @@
+- #1 (J1) Nouvelle partie (graine 1142026) : 12 aventuriers, 12 or, réputation 35.
+- #2 (J1) Jour 1 : 4 offres publiées (palier « suspecte »).
+- #3 (J1) Borborygme Release part pour « Promener Médor » (engagement : 0 cuivre).
+- #4 (J1) Gérard Dev part pour « Rats de la cave » (engagement : 22 cuivres).
+- #5 (J1) Jean-Michel SRE part pour « Le moulin capricieux » (engagement : 25 cuivres).
+- #6 (J1) Borborygme Release réussit « Promener Médor » (tirage 18 / chance 90 %) : prime 2 cuivres, énergie -6.
+- #7 (J1) Réputation 35 → 37 (+2) : Succès de « Promener Médor ».
+- #8 (J1) Gérard Dev réussit « Rats de la cave » (tirage 36 / chance 87 %) : prime 25 cuivres, énergie -12.
+- #9 (J1) Réputation 37 → 41 (+4) : Succès de « Rats de la cave ».
+- #10 (J1) Réputation 41 → 37 (-4) : dommage collatéral (Livraison avant-hier).
+- #11 (J1) Réclamation c1 — Livraison avant-hier : Votre publicité promet une exécution éclair. Le client exige une livraison avant-hier. (réparation : 40 cuivres ; à traiter avant la fin du jour 3).
+- #12 (J1) Jean-Michel SRE réussit « Le moulin capricieux » (tirage 43 / chance 82 %) : prime 60 cuivres, énergie -22.
+- #13 (J1) Réputation 37 → 41 (+4) : Succès de « Le moulin capricieux ».
+- #14 (J1) Réclamation c1 close : Calmer le client avec un geste commercial (coût 40 cuivres).
+- #15 (J1) Réputation 41 → 44 (+3) : réclamation c1.
+- #16 (J1) Fin du jour 1.
+- #17 (J2) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #18 (J2) Jour 2 : 4 offres publiées (palier « acceptable »).
+- #19 (J2) Jean-Michel SRE part pour « Le moulin capricieux » (engagement : 25 cuivres).
+- #20 (J2) Archibald Platform part pour « Le pont qui grince » (engagement : 32 cuivres).
+- #21 (J2) Merlinda QA part pour « La soupe du village » (engagement : 36 cuivres).
+- #22 (J2) Jean-Michel SRE échoue « Le moulin capricieux » (tirage 90 / chance 82 %) : aucune prime, énergie -22.
+- #23 (J2) Réputation 44 → 41 (-3) : Échec de « Le moulin capricieux ».
+- #24 (J2) Archibald Platform réussit « Le pont qui grince » (tirage 73 / chance 87 %) : prime 30 cuivres, énergie -18.
+- #25 (J2) Réputation 41 → 45 (+4) : Succès de « Le pont qui grince ».
+- #26 (J2) Merlinda QA réussit « La soupe du village » (tirage 2 / chance 88 %) : prime 45 cuivres, énergie -20.
+- #27 (J2) Réputation 45 → 49 (+4) : Succès de « La soupe du village ».
+- #28 (J2) Réputation 49 → 45 (-4) : dommage collatéral (La prime de conformité).
+- #29 (J2) Réclamation c2 — La prime de conformité : Merlinda réclame une prime pour parfaite conformité au parchemin, tampons de sa grenouille à l'appui. (réparation : 60 cuivres ; à traiter avant la fin du jour 4).
+- #30 (J2) Réclamation c2 close : Verser la prime de conformité (coût 60 cuivres).
+- #31 (J2) Réputation 45 → 48 (+3) : réclamation c2.
+- #32 (J2) Fin du jour 2.
+- #33 (J3) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #34 (J3) Jour 3 : 4 offres publiées (palier « acceptable »).
+- #35 (J3) Gérard Dev part pour « Rats de la cave » (engagement : 22 cuivres).
+- #36 (J3) Borborygme Release part pour « Les canards démoniaques » (engagement : 16 cuivres).
+- #37 (J3) Merlinda QA part pour « La tour hantée » (engagement : 36 cuivres).
+- #38 (J3) Gérard Dev réussit « Rats de la cave » (tirage 68 / chance 87 %) : prime 25 cuivres, énergie -12.
+- #39 (J3) Réputation 48 → 52 (+4) : Succès de « Rats de la cave ».
+- #40 (J3) Borborygme Release réussit « Les canards démoniaques » (tirage 62 / chance 67 %) : prime 90 cuivres, énergie -18.
+- #41 (J3) Réputation 52 → 56 (+4) : Succès de « Les canards démoniaques ».
+- #42 (J3) Merlinda QA réussit « La tour hantée » (tirage 41 / chance 73 %) : prime 1 or 60 cuivres, énergie -30.
+- #43 (J3) Réputation 56 → 60 (+4) : Succès de « La tour hantée ».
+- #44 (J3) Fin du jour 3.
+- #45 (J4) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #46 (J4) Jour 4 : 4 offres publiées (palier « recommandee »).
+- #47 (J4) Merlinda QA part pour « Grimoire de l'Académie » (engagement : 36 cuivres).
+- #48 (J4) Gérard Dev part pour « Escorte du marchand » (engagement : 22 cuivres).
+- #49 (J4) Léon DataOps part pour « La tour hantée » (engagement : 25 cuivres).
+- #50 (J4) Merlinda QA réussit « Grimoire de l'Académie » (tirage 37 / chance 63 %) : prime 3 or 50 cuivres, énergie -36.
+- #51 (J4) Réputation 60 → 64 (+4) : Succès de « Grimoire de l'Académie ».
+- #52 (J4) Réputation 64 → 60 (-4) : dommage collatéral (La prime de conformité).
+- #53 (J4) Réclamation c3 — La prime de conformité : Merlinda réclame une prime pour parfaite conformité au parchemin, tampons de sa grenouille à l'appui. (réparation : 60 cuivres ; à traiter avant la fin du jour 6).
+- #54 (J4) Gérard Dev échoue « Escorte du marchand » (tirage 71 / chance 57 %) : aucune prime, énergie -32.
+- #55 (J4) Réputation 60 → 57 (-3) : Échec de « Escorte du marchand ».
+- #56 (J4) Léon DataOps réussit « La tour hantée » (tirage 45 / chance 75 %) : prime 1 or 60 cuivres, énergie -33.
+- #57 (J4) Réputation 57 → 61 (+4) : Succès de « La tour hantée ».
+- #58 (J4) Réputation 61 → 57 (-4) : dommage collatéral (L'inspecteur et les justificatifs).
+- #59 (J4) Réclamation c4 — L'inspecteur et les justificatifs : L'inspecteur royal félicite la guilde… puis demande les justificatifs de chaque mission. (réparation : 50 cuivres ; à traiter avant la fin du jour 6).
+- #60 (J4) Réclamation c3 close : Verser la prime de conformité (coût 60 cuivres).
+- #61 (J4) Réputation 57 → 60 (+3) : réclamation c3.
+- #62 (J4) Réclamation c4 close : Fournir un rapport complet (coût 50 cuivres).
+- #63 (J4) Réputation 60 → 63 (+3) : réclamation c4.
+- #64 (J4) Fin du jour 4.
+- #65 (J5) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #66 (J5) Jour 5 : 4 offres publiées (palier « recommandee »).
+- #67 (J5) Jean-Michel SRE part pour « Le moulin capricieux » (engagement : 25 cuivres).
+- #68 (J5) Merlinda QA part pour « Grimoire de l'Académie » (engagement : 36 cuivres).
+- #69 (J5) Gérard Dev part pour « Bandits de la route » (engagement : 22 cuivres).
+- #70 (J5) Jean-Michel SRE réussit « Le moulin capricieux » (tirage 67 / chance 82 %) : prime 60 cuivres, énergie -22.
+- #71 (J5) Réputation 63 → 67 (+4) : Succès de « Le moulin capricieux ».
+- #72 (J5) Merlinda QA échoue « Grimoire de l'Académie » (tirage 82 / chance 63 %) : aucune prime, énergie -36.
+- #73 (J5) Réputation 67 → 64 (-3) : Échec de « Grimoire de l'Académie ».
+- #74 (J5) Gérard Dev réussit « Bandits de la route » (tirage 39 / chance 72 %) : prime 1 or 10 cuivres, énergie -25.
+- #75 (J5) Réputation 64 → 68 (+4) : Succès de « Bandits de la route ».
+- #76 (J5) Réputation 68 → 64 (-4) : dommage collatéral (L'inspecteur et les justificatifs).
+- #77 (J5) Réclamation c5 — L'inspecteur et les justificatifs : L'inspecteur royal félicite la guilde… puis demande les justificatifs de chaque mission. (réparation : 50 cuivres ; à traiter avant la fin du jour 7).
+- #78 (J5) Réclamation c5 close : Fournir un rapport complet (coût 50 cuivres).
+- #79 (J5) Réputation 64 → 67 (+3) : réclamation c5.
+- #80 (J5) Fin du jour 5.
+- #81 (J6) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #82 (J6) Jour 6 : 4 offres publiées (palier « recommandee »).
+- #83 (J6) Merlinda QA part pour « La tour hantée » (engagement : 36 cuivres).
+- #84 (J6) Borborygme Release part pour « Les canards démoniaques » (engagement : 16 cuivres).
+- #85 (J6) Gérard Dev part pour « Escorte du marchand » (engagement : 22 cuivres).
+- #86 (J6) Merlinda QA réussit « La tour hantée » (tirage 40 / chance 73 %) : prime 1 or 60 cuivres, énergie -30.
+- #87 (J6) Réputation 67 → 71 (+4) : Succès de « La tour hantée ».
+- #88 (J6) Réputation 71 → 67 (-4) : dommage collatéral (La prime de conformité).
+- #89 (J6) Réclamation c6 — La prime de conformité : Merlinda réclame une prime pour parfaite conformité au parchemin, tampons de sa grenouille à l'appui. (réparation : 60 cuivres ; à traiter avant la fin du jour 8).
+- #90 (J6) Borborygme Release réussit « Les canards démoniaques » (tirage 56 / chance 67 %) : prime 90 cuivres, énergie -18.
+- #91 (J6) Réputation 67 → 71 (+4) : Succès de « Les canards démoniaques ».
+- #92 (J6) Réputation 71 → 67 (-4) : dommage collatéral (L'inspecteur et les justificatifs).
+- #93 (J6) Réclamation c7 — L'inspecteur et les justificatifs : L'inspecteur royal félicite la guilde… puis demande les justificatifs de chaque mission. (réparation : 50 cuivres ; à traiter avant la fin du jour 8).
+- #94 (J6) Gérard Dev réussit « Escorte du marchand » (tirage 7 / chance 57 %) : prime 2 or 80 cuivres, énergie -32.
+- #95 (J6) Réputation 67 → 71 (+4) : Succès de « Escorte du marchand ».
+- #96 (J6) Réclamation c6 close : Verser la prime de conformité (coût 60 cuivres).
+- #97 (J6) Réputation 71 → 74 (+3) : réclamation c6.
+- #98 (J6) Réclamation c7 close : Fournir un rapport complet (coût 50 cuivres).
+- #99 (J6) Réputation 74 → 77 (+3) : réclamation c7.
+- #100 (J6) Fin du jour 6.
+- #101 (J7) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #102 (J7) Jour 7 : 4 offres publiées (palier « recommandee »).
+- #103 (J7) Merlinda QA part pour « La soupe du village » (engagement : 36 cuivres).
+- #104 (J7) Jean-Michel SRE part pour « Le moulin capricieux » (engagement : 25 cuivres).
+- #105 (J7) Léon DataOps part pour « Le puits qui bafouille » (engagement : 0 cuivre).
+- #106 (J7) Merlinda QA réussit « La soupe du village » (tirage 36 / chance 88 %) : prime 45 cuivres, énergie -20.
+- #107 (J7) Réputation 77 → 81 (+4) : Succès de « La soupe du village ».
+- #108 (J7) Jean-Michel SRE réussit « Le moulin capricieux » (tirage 77 / chance 82 %) : prime 60 cuivres, énergie -22.
+- #109 (J7) Réputation 81 → 85 (+4) : Succès de « Le moulin capricieux ».
+- #110 (J7) Léon DataOps réussit « Le puits qui bafouille » (tirage 64 / chance 90 %) : prime 10 cuivres, énergie -15.
+- #111 (J7) Réputation 85 → 87 (+2) : Succès de « Le puits qui bafouille ».
+- #112 (J7) Fin du jour 7.
+- #113 (J7) Redressement réussi ! Le conseil royal est satisfait (réputation 87/55, trésorerie 20 or 77 cuivres/10 or, missions réussies 18/8).
