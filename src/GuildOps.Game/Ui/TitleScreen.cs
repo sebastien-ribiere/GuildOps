@@ -43,6 +43,7 @@ public partial class TitleScreen : Overlay
         _new = Entry("Nouvelle partie", "play", () => Shell.RequestNewGame());
         Entry("Aide et règles", "help", () => Shell.OpenHelp());
         Entry("Paramètres", "settings", () => Shell.OpenSettings());
+        Entry("Crédits", "credits", () => Shell.OpenCredits());
         _quit = Entry("Quitter", "exit", () => Shell.RequestQuit());
         _note = UiKit.Lbl("", UiKit.Muted, wrap: true);
         _note.HorizontalAlignment = HorizontalAlignment.Center;

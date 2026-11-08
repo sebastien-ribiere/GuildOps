@@ -50,6 +50,7 @@ public partial class GameShell : Control
     private HelpScreen _help = null!;
     private SettingsScreen _settingsScreen = null!;
     private EndScreen _end = null!;
+    private CreditsScreen _credits = null!;
     private readonly List<Overlay> _overlays = [];
     private int _pristineEvents;
 
@@ -137,6 +138,7 @@ public partial class GameShell : Control
         _intro = AddOverlay<IntroScreen>("IntroScreen");
         _help = AddOverlay<HelpScreen>("HelpScreen");
         _settingsScreen = AddOverlay<SettingsScreen>("SettingsScreen");
+        _credits = AddOverlay<CreditsScreen>("CreditsScreen");
         _end = AddOverlay<EndScreen>("EndScreen");
         _confirm = AddOverlay<ConfirmDialog>("ConfirmDialog");
     }
@@ -151,6 +153,7 @@ public partial class GameShell : Control
     public HelpScreen Help => _help;
     public SettingsScreen SettingsView => _settingsScreen;
     public EndScreen End => _end;
+    public CreditsScreen Credits => _credits;
 
     public void PushOverlay(Overlay overlay) => _overlays.Add(overlay);
     public void PopOverlay(Overlay overlay) => _overlays.Remove(overlay);
@@ -170,6 +173,9 @@ public partial class GameShell : Control
 
     /// <summary>Paramètres d'affichage et de confort (depuis le titre ; en jeu, via « Menu »).</summary>
     public void OpenSettings() => _settingsScreen.Open();
+
+    /// <summary>Crédits et licences.</summary>
+    public void OpenCredits() => _credits.Open();
 
     /// <summary>« Reprendre » : retour à la partie en mémoire, dans la vue où on l'avait laissée. Aucune écriture dans Core.</summary>
     public void ResumeGame()

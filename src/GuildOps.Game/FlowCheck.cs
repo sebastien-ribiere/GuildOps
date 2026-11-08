@@ -30,11 +30,14 @@ public sealed class FlowCheck(GameShell shell)
         _freshSnapshot = Probe.Snapshot(_session);
         await _p.Frame(3);
 
+        AssetsB53();
         await TitleAndIntro();
         SampleSilence();
         await HelpFromTitleAndGame();
         SampleSilence();
         await SettingsAndComfort();
+        SampleSilence();
+        await CreditsScreenCheck();
         SampleSilence();
         await VictoryRun();
         SampleSilence();
@@ -45,6 +48,7 @@ public sealed class FlowCheck(GameShell shell)
             $"silence : {_silenceSamples} relevés pendant le parcours, {_players} lecteur(s) audio dans l'arbre de scène, crête maximale du mixage {_peak:0.#} dB");
         _p.Check("FLOW_SESSION_CHECK", ReferenceEquals(_session, shell.Session) && shell.Session.Seed == _seed && _seed == shell.Session.Data.Rules.TestSeed,
             $"une seule GameSession pendant tout le parcours, graine de référence {_seed} inchangée");
+        GD.Print($"FLOW_INFO dossier des données utilisateur : {OS.GetUserDataDir()}");
         GD.Print($"FLOW_RESULT failures={_p.Failures}");
         shell.GetTree().Quit(_p.Failures == 0 ? 0 : 1);
     }
@@ -72,6 +76,40 @@ public sealed class FlowCheck(GameShell shell)
         Walk(shell.GetTree().Root);
         for (var bus = 0; bus < AudioServer.BusCount; bus++)
             _peak = Math.Max(_peak, Math.Max(AudioServer.GetBusPeakVolumeLeftDb(bus, 0), AudioServer.GetBusPeakVolumeRightDb(bus, 0)));
+    }
+
+    /// <summary>Les 27 PNG du kit B5.3 sont présents et se chargent (dans l'éditeur comme dans un export, où seul « x.png.import » est listé).</summary>
+    private void AssetsB53()
+    {
+        var found = new SortedSet<string>(StringComparer.Ordinal);
+        void Walk(string dir)
+        {
+            foreach (var d in DirAccess.GetDirectoriesAt(dir)) Walk($"{dir}/{d}");
+            foreach (var f in DirAccess.GetFilesAt(dir))
+            {
+                var name = f.EndsWith(".import") ? f[..^".import".Length] : f;
+                if (name.EndsWith(".png")) found.Add($"{dir}/{name}"["res://Assets/".Length..]);
+            }
+        }
+        Walk("res://Assets/b5_3");
+        var broken = found.Where(f => UiKit.Tex(f) is not { } t || t.GetWidth() == 0).ToList();
+
+        // Contenu embarqué : aucun fichier audio, ni sources/ ni previews/ du kit (vrai dans l'éditeur comme dans l'export).
+        var audio = new List<string>();
+        var extras = new List<string>();
+        void Scan(string dir)
+        {
+            foreach (var d in DirAccess.GetDirectoriesAt(dir))
+            {
+                if (d is "sources" or "previews") extras.Add($"{dir}/{d}");
+                if (d is not ".godot") Scan($"{dir}/{d}");
+            }
+            foreach (var f in DirAccess.GetFilesAt(dir))
+                if (new[] { ".ogg", ".wav", ".mp3", ".opus", ".flac" }.Any(e => f.Contains(e, StringComparison.OrdinalIgnoreCase))) audio.Add($"{dir}/{f}");
+        }
+        Scan("res://");
+        _p.Check("FLOW_ASSETS_CHECK", found.Count == 27 && broken.Count == 0 && audio.Count == 0 && extras.Count == 0,
+            $"{found.Count} PNG B5.3 listés (27 attendus), illisibles={broken.Count} {string.Join(",", broken)} ; fichiers audio embarqués={audio.Count} {string.Join(",", audio)} ; dossiers sources/previews={extras.Count}");
     }
 
     private bool SameSession => ReferenceEquals(_session, shell.Session) && shell.Session.Seed == _seed;
@@ -540,5 +578,52 @@ public sealed class FlowCheck(GameShell shell)
         await _p.Frame(3);
         _p.Check("FLOW_END_NEW_GAME_CHECK", asksFromEnd && intro && shell.Current == View.Hall && !shell.AnyOverlayOpen && SameSession,
             "« Nouvelle partie » depuis l'écran de fin : confirmation, puis introduction ignorée et hall d'une partie neuve (même graine)");
+    }
+
+    // ---- Crédits ------------------------------------------------------------------------------------------------------------------
+
+    private async Task CreditsScreenCheck()
+    {
+        var snap = Probe.Snapshot(shell.Session);
+        var view = shell.Credits;
+        Find(shell, "Menu")?.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        await _p.TabTo(c => c is Button { Text: "Crédits" });
+        var origin = _p.Focused();
+        await _p.Press("ui_accept");
+        await _p.Frame(3);
+        var text = view.Text.GetParsedText();
+        await Shot("c1-credits");
+        var verified = new[] { "Sébastien Ribière", "Pixeloid Sans 1.0", "GGBotNet", "SIL Open Font License 1.1", "Godot Engine", ".NET", "silencieux" };
+        var missing = verified.Where(v => !text.Contains(v)).ToList();
+        var info = Engine.GetVersionInfo();
+        var godotVersion = $"{info["major"]}.{info["minor"]}.{info["patch"]} {info["status"]}";
+        _p.Check("FLOW_CREDITS_CHECK", view.IsOpen && shell.TopOverlay == view && missing.Count == 0 && text.Contains(godotVersion) && text.Contains(System.Environment.Version.ToString()),
+            $"crédits ouverts depuis le titre : contributions vérifiables présentes ({verified.Length - missing.Count}/{verified.Length} {string.Join(",", missing)}), versions lues à l'exécution (Godot {godotVersion}, .NET {System.Environment.Version})");
+
+        // Licences : texte OFL du dépôt + licence du moteur ; défilement au clavier.
+        view.LicensesButton.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        var licenses = view.Text.GetParsedText();
+        var scrollBar = view.Text.GetVScrollBar();
+        await _p.TabTo(c => c == view.Text);
+        var before = scrollBar.Value;
+        await _p.PressKey(Key.Pagedown);   // touche réelle : RichTextLabel ignore les actions synthétiques
+        await _p.Frame(2);
+        var scrolled = scrollBar.Value > before;
+        await Shot("c2-credits-licenses");
+        _p.Check("FLOW_LICENSES_CHECK", view.ShowingLicenses && licenses.Contains("SIL OPEN FONT LICENSE") && licenses.Contains("Permission is hereby granted") && licenses.Contains("(")
+                                        && scrolled && _p.Focused() == view.Text,
+            $"licences : texte OFL du dépôt et licence MIT du moteur, composants tiers listés ({licenses.Length} caractères), défilement au clavier ({before} -> {scrollBar.Value})");
+
+        await _p.Press("ui_cancel");
+        await _p.Frame(3);
+        _p.Check("FLOW_CREDITS_CLOSE_CHECK", !view.IsOpen && shell.Title.IsOpen && _p.Focused() == origin && Probe.Snapshot(shell.Session) == snap && SameSession,
+            "Échap ferme les crédits, le titre reste dessous, focus rendu au bouton « Crédits », session intacte");
+        await _p.TabTo(c => c is Button { Text: "Nouvelle partie" });
+        await _p.Press("ui_accept");
+        await _p.Frame(2);
+        await _p.Press("ui_cancel");
+        await _p.Frame(3);
     }
 }

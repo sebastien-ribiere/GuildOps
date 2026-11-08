@@ -426,7 +426,9 @@ public sealed class AutoPlay(GameShell shell)
     {
         var png = new List<(string path, Vector2I size)>();
         foreach (var dir in new[] { "ambient", "categories", "levels", "quests", "quests_hd", "skills", "vfx" })
-            foreach (var f in DirAccess.GetFilesAt($"res://Assets/b5_2/{dir}").Where(f => f.EndsWith(".png"))) png.Add(($"b5_2/{dir}/{f}", Vector2I.Zero));
+            // Dans un export, les PNG sont convertis : seul « x.png.import » reste listé. On ramène les deux cas au nom de la ressource.
+            foreach (var f in DirAccess.GetFilesAt($"res://Assets/b5_2/{dir}").Select(f => f.EndsWith(".import") ? f[..^".import".Length] : f).Where(f => f.EndsWith(".png")).Distinct())
+                png.Add(($"b5_2/{dir}/{f}", Vector2I.Zero));
         var bad = new List<string>();
         foreach (var (path, _) in png)
         {
