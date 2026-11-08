@@ -17,6 +17,7 @@ public sealed class FlowCheck(GameShell shell)
     private Probe _p = null!;
     private GameSession _session = null!;
     private long _seed;
+    private string _freshSnapshot = "";
 
     public async Task Run()
     {
@@ -26,6 +27,7 @@ public sealed class FlowCheck(GameShell shell)
         _p = new Probe(shell, shots);
         _session = shell.Session;
         _seed = _session.Seed;
+        _freshSnapshot = Probe.Snapshot(_session);
         await _p.Frame(3);
 
         await TitleAndIntro();
@@ -33,6 +35,10 @@ public sealed class FlowCheck(GameShell shell)
         await HelpFromTitleAndGame();
         SampleSilence();
         await SettingsAndComfort();
+        SampleSilence();
+        await VictoryRun();
+        SampleSilence();
+        await NewGameAndDefeatRun();
         SampleSilence();
 
         _p.Check("FLOW_SILENCE_CHECK", _players == 0 && _peak < -60f && AudioServer.BusCount >= 1,
@@ -333,5 +339,206 @@ public sealed class FlowCheck(GameShell shell)
         await _p.Frame(2);
         await _p.Press("ui_cancel");
         await _p.Frame(3);
+    }
+
+    // ---- Parties complètes ----------------------------------------------------------------------------------------------------
+
+    /// <summary>Politique de référence « première offre × premier héros éligible » appliquée directement à une session Core (pour comparaison).</summary>
+    private static GameSession CoreOnly(GameSession like, bool idle)
+    {
+        var s = GameSession.Start(like.Data, like.Seed);
+        while (s.Status == GameStatus.InProgress)
+        {
+            if (!idle)
+            {
+                for (var n = 0; n < s.Data.Rules.MaxMissionsPerDay; n++)
+                {
+                    if (AutoPlay.Pick(s) is not { } pick) break;
+                    s.Assign(pick.offer, pick.hero);
+                }
+                foreach (var q in s.Quests.Where(q => q.State == QuestState.Assigned).ToList()) s.Resolve(q.Id);
+                foreach (var c in s.OpenComplaints.ToList()) s.ResolveComplaint(c.Id, AutoPlay.Choose(s, c));
+            }
+            s.EndDay();
+        }
+        return s;
+    }
+
+    private static string Journal(GameSession s) => string.Join("\n", s.Events.Select(e => $"#{e.Sequence} (J{e.Day}) {e.Message}"));
+
+    private async Task PressEndDay()
+    {
+        shell.Show(View.Report);
+        await _p.Frame(2);
+        var end = Find(shell, "Terminer la journée");
+        if (end is null) { _p.Check("FLOW_END_DAY_CHECK", false, "bouton « Terminer la journée » introuvable"); return; }
+        end.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(2);
+    }
+
+    /// <summary>Sept jours de gestion avec les vrais contrôles, depuis la nouvelle partie jusqu'au bilan royal, dont la victoire.</summary>
+    private async Task VictoryRun()
+    {
+        var s = shell.Session;
+        var set = shell.Settings;
+        var played0 = CosmeticFx.Played.Count;
+        var reducedFx = "non évalué";
+        var liveCut = "non évalué";
+        var missions = 0;
+        var failures = 0;
+        var endEarly = false;
+        var days = 0;
+        shell.Show(View.Hall);
+
+        while (s.Status == GameStatus.InProgress)
+        {
+            days++;
+            for (var n = 0; n < s.Data.Rules.MaxMissionsPerDay; n++)
+            {
+                if (AutoPlay.Pick(s) is not { } pick) break;
+                shell.Show(View.Board); shell.SelectOffer(pick.offer);
+                shell.Show(View.Roster); shell.SelectHero(pick.hero);
+                shell.Assign();
+            }
+            foreach (var quest in s.Quests.Where(q => q.State == QuestState.Assigned).ToList())
+            {
+                shell.SelectQuest(quest.Id);
+                shell.Show(View.Missions);
+                await _p.Frame(2);
+                if (missions == 0) set.SetReduceMotion(true);     // 1re mission : animations réduites
+                if (missions == 1) set.SetReduceMotion(false);    // 2e : normales
+                var before = CosmeticFx.Played.Count;
+                var press = Find(shell, "Résoudre la mission");
+                press?.EmitSignal(BaseButton.SignalName.Pressed);
+                await _p.Frame(3);
+                if (missions == 0) reducedFx = $"{CosmeticFx.Played.Count - before} effet lancé, {CosmeticFx.Active} actif";
+                if (missions == 0) _p.Check("FLOW_REDUCE_FX_CHECK", press is not null && CosmeticFx.Played.Count == before && CosmeticFx.Active == 0 && shell.Outcomes.ContainsKey(quest.Id),
+                    $"animations réduites : la mission est résolue (verdict en texte) mais {reducedFx}");
+                if (missions == 1) _p.Check("FLOW_NORMAL_FX_CHECK", press is not null && CosmeticFx.Played.Count > before && CosmeticFx.Active > 0,
+                    $"animations normales : {CosmeticFx.Played.Count - before} effet lancé, {CosmeticFx.Active} actif");
+                if (missions == 2)
+                {
+                    // Réduction EN COURS d'effet : il s'arrête aussitôt, sans toucher au résultat déjà produit.
+                    var active = CosmeticFx.Active > 0;
+                    var outcome = shell.Outcomes[quest.Id];
+                    set.SetReduceMotion(true);
+                    await _p.Frame(3);
+                    liveCut = $"effet en cours={active}, après réduction actifs={CosmeticFx.Active}";
+                    _p.Check("FLOW_REDUCE_LIVE_CHECK", active && CosmeticFx.Active == 0 && shell.Outcomes[quest.Id] == outcome, $"réduction pendant un effet : {liveCut}, résultat inchangé");
+                    set.SetReduceMotion(false);
+                }
+                missions++;
+                if (!shell.Outcomes[quest.Id].Success) failures++;
+                if (shell.End.IsOpen) endEarly = true;     // un échec de mission ordinaire ne doit JAMAIS ouvrir l'écran de défaite
+                await _p.Frame(2);
+            }
+            foreach (var complaint in s.OpenComplaints.ToList())
+            {
+                shell.SelectComplaint(complaint.Id);
+                shell.Show(View.Complaints);
+                shell.ResolveComplaint(AutoPlay.Choose(s, complaint));
+            }
+            if (s.Guild.Day < s.Data.Rules.Days && shell.End.IsOpen) endEarly = true;
+            await PressEndDay();
+        }
+        await _p.Frame(3);
+        await Shot("e1-victory");
+
+        // Comparaison avec la même politique appliquée directement à Core : l'interface, les modales et les animations ne changent rien.
+        var reference = CoreOnly(s, idle: false);
+        var identical = Probe.Snapshot(s) == Probe.Snapshot(reference) && Journal(s) == Journal(reference);
+        var report = s.Report;
+        _p.Check("FLOW_DAYS_CHECK", days == s.Data.Rules.Days && failures > 0 && !endEarly && s.Status == GameStatus.Finished && report is not null,
+            $"{days} jours joués avec les vrais boutons, {missions} missions dont {failures} échecs : aucun écran de fin avant le bilan royal ({(endEarly ? "ÉCHEC" : "OK")})");
+        _p.Check("FLOW_DETERMINISM_CHECK", identical && report is not null && reference.Report!.Success == report.Success,
+            $"état final et journal ({s.Events.Count} événements) identiques à la même partie jouée directement dans Core (jour {s.Guild.Day}, trésorerie {s.Guild.TreasuryCopper}, réputation {s.Guild.Reputation}, missions réussies {s.Guild.MissionsSucceeded}), malgré bascules d'animations réduites");
+
+        var end = shell.End;
+        var texts = end.GetChildren().Count > 0 ? end.FindChildren("*", "Label", true, false).OfType<Label>().Select(l => l.Text).ToList() : [];
+        var realValues = report is not null && texts.Any(t => t.Contains($"Réputation : {report.Reputation}")) && texts.Any(t => t.Contains($"Missions réussies : {report.MissionsSucceeded}"));
+        _p.Check("FLOW_END_VICTORY_CHECK", report is { Success: true } && end.IsOpen && end.ShowsVictory && ReferenceEquals(end.Report, report) && end.Picture.Texture == B53.Victory
+                                            && _p.Focused() == end.DetailButton && realValues && !shell.Title.IsOpen,
+            "victoire : écran affiché d'après FinalReport.Success, illustration de victoire, valeurs réelles du rapport, focus sur « Voir le bilan détaillé »");
+
+        // « Voir le bilan détaillé » : même vue Report que d'habitude.
+        await _p.Press("ui_accept");
+        await _p.Frame(3);
+        await Shot("e3-report-final");
+        _p.Check("FLOW_END_DETAIL_CHECK", !end.IsOpen && shell.Current == View.Report && SameSession && s.Status == GameStatus.Finished,
+            "« Voir le bilan détaillé » : écran de fin fermé, bilan et journal existants affichés, partie conservée");
+    }
+
+    /// <summary>Retour au titre, reprise du bilan, nouvelle partie confirmée (même graine), puis une partie perdue (défaite d'après FinalReport).</summary>
+    private async Task NewGameAndDefeatRun()
+    {
+        var s = shell.Session;
+        var finalSnap = Probe.Snapshot(s);
+
+        // Retour au titre : la session n'est PAS réinitialisée ; « Reprendre » devient « Revoir le bilan ».
+        Find(shell, "Menu")?.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        var title = shell.Title;
+        var resumeLabel = title.ResumeButton.Visible ? title.ResumeButton.Text : "(absent)";
+        _p.Check("FLOW_RETURN_TITLE_CHECK", title.IsOpen && resumeLabel == "Revoir le bilan" && Probe.Snapshot(s) == finalSnap && SameSession,
+            $"retour au titre sans réinitialiser : le menu propose « {resumeLabel} » (partie en mémoire), session identique");
+
+        // « Nouvelle partie » demande confirmation ; Échap annule sans rien changer ; le focus initial est sur le choix sûr.
+        await _p.TabTo(c => c is Button { Text: "Nouvelle partie" });
+        await _p.Press("ui_accept");
+        await _p.Frame(3);
+        var confirm = shell.Confirm;
+        var asked = confirm.IsOpen && _p.Focused() is Button { Text: "Annuler" } && Probe.Snapshot(s) == finalSnap;
+        await Shot("e4-confirm-new-game");
+        await _p.Press("ui_cancel");
+        await _p.Frame(3);
+        var cancelled = !confirm.IsOpen && title.IsOpen && Probe.Snapshot(s) == finalSnap && _p.Focused() is Button { Text: "Nouvelle partie" };
+        _p.Check("FLOW_CONFIRM_CANCEL_CHECK", asked && cancelled, "« Nouvelle partie » sur une partie terminée : confirmation (focus sur « Annuler »), Échap annule, partie et focus intacts");
+
+        // Même demande, confirmée : réinitialisation à l'état initial exact (même graine), introduction, puis le hall.
+        await _p.Press("ui_accept");
+        await _p.Frame(3);
+        await _p.TabTo(c => c is Button { Text: "Nouvelle partie" } && confirm.IsAncestorOf(c));
+        await _p.Press("ui_accept");
+        await _p.Frame(4);
+        var reset = shell.Intro.IsOpen && !confirm.IsOpen && !title.IsOpen && SameSession && Probe.Snapshot(s) == _freshSnapshot && s.Seed == _seed;
+        _p.Check("FLOW_NEW_GAME_CHECK", reset, "nouvelle partie confirmée : introduction affichée, même instance de GameSession, état initial identique octet pour octet (même graine)");
+        await _p.Press("ui_accept");   // « Commencer »
+        await _p.Frame(3);
+
+        // Une partie sans aucune mission : sept « Terminer la journée ». Défaite globale d'après FinalReport.
+        var days = 0;
+        while (s.Status == GameStatus.InProgress) { days++; await PressEndDay(); }
+        await _p.Frame(3);
+        var end = shell.End;
+        var report = s.Report;
+        await Shot("e2-defeat");
+        var reference = CoreOnly(s, idle: true);
+        _p.Check("FLOW_END_DEFEAT_CHECK", report is { Success: false } && end.IsOpen && !end.ShowsVictory && ReferenceEquals(end.Report, report) && end.Picture.Texture == B53.Defeat
+                                           && days == s.Data.Rules.Days && Probe.Snapshot(s) == Probe.Snapshot(reference) && Journal(s) == Journal(reference),
+            $"défaite : écran de défaite d'après FinalReport.Success=false, illustration de défaite, état identique à Core seul ({days} jours, réputation {s.Guild.Reputation}, trésorerie {s.Guild.TreasuryCopper})");
+
+        // Défaite -> « Retour au titre » (session conservée) -> « Revoir le bilan » -> la vue Report, sans rouvrir l'écran de fin.
+        var defeatSnap = Probe.Snapshot(s);
+        end.TitleButton.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        var toTitle = !end.IsOpen && title.IsOpen && Probe.Snapshot(s) == defeatSnap;
+        title.ResumeButton.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        _p.Check("FLOW_END_NAV_CHECK", toTitle && !title.IsOpen && !end.IsOpen && shell.Current == View.Report && Probe.Snapshot(s) == defeatSnap && SameSession,
+            "défaite : « Retour au titre » conserve la session, « Revoir le bilan » ramène au bilan sans rouvrir l'écran de fin");
+
+        // Retour à une partie neuve pour la suite (hall) : Nouvelle partie confirmée depuis l'écran de fin affiché à la main.
+        end.Present(report!);
+        await _p.Frame(3);
+        end.NewGameButton.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        var asksFromEnd = confirm.IsOpen && end.IsOpen;
+        confirm.FindChildren("*", "Button", true, false).OfType<Button>().First(b => b.Text == "Nouvelle partie").EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(4);
+        var intro = shell.Intro.IsOpen && !end.IsOpen && Probe.Snapshot(s) == _freshSnapshot;
+        await _p.Press("ui_cancel");
+        await _p.Frame(3);
+        _p.Check("FLOW_END_NEW_GAME_CHECK", asksFromEnd && intro && shell.Current == View.Hall && !shell.AnyOverlayOpen && SameSession,
+            "« Nouvelle partie » depuis l'écran de fin : confirmation, puis introduction ignorée et hall d'une partie neuve (même graine)");
     }
 }

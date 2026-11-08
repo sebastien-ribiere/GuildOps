@@ -49,6 +49,7 @@ public partial class GameShell : Control
     private ConfirmDialog _confirm = null!;
     private HelpScreen _help = null!;
     private SettingsScreen _settingsScreen = null!;
+    private EndScreen _end = null!;
     private readonly List<Overlay> _overlays = [];
     private int _pristineEvents;
 
@@ -136,6 +137,7 @@ public partial class GameShell : Control
         _intro = AddOverlay<IntroScreen>("IntroScreen");
         _help = AddOverlay<HelpScreen>("HelpScreen");
         _settingsScreen = AddOverlay<SettingsScreen>("SettingsScreen");
+        _end = AddOverlay<EndScreen>("EndScreen");
         _confirm = AddOverlay<ConfirmDialog>("ConfirmDialog");
     }
 
@@ -148,6 +150,7 @@ public partial class GameShell : Control
     public ConfirmDialog Confirm => _confirm;
     public HelpScreen Help => _help;
     public SettingsScreen SettingsView => _settingsScreen;
+    public EndScreen End => _end;
 
     public void PushOverlay(Overlay overlay) => _overlays.Add(overlay);
     public void PopOverlay(Overlay overlay) => _overlays.Remove(overlay);
@@ -426,7 +429,12 @@ public partial class GameShell : Control
             ? report.Message
             : $"Jour {t.NewDay} : énergie récupérée, {t.NewOffers.Count} nouvelles offres.", t.Report?.Success ?? true);
         RefreshAll();
-        if (t.Report is not null) Show(View.Report);
+        if (t.Report is { } final)
+        {
+            Show(View.Report);
+            // Conclusion de la partie : seulement quand Core rend son rapport final, et jamais en lancement automatisé (aucune modale ne bloque les tests).
+            if (!Automated) _end.Present(final);
+        }
     }
 
     private void OnResetPressed()
