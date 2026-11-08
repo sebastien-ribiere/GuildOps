@@ -35,9 +35,9 @@ Légende des preuves : **C** = contrôle automatique exécuté dans le Godot ré
 
 | Exigence | Implémentation existante | Preuve | Reste |
 |---|---|---|---|
-| Grille 4×3 sans scroll, 12 noms entiers | `Cards.HeroCard` ; **corrigé** : carte portée à 102 px et interligne de nom ramené à −2 (le 2e nom touchait la bordure : « Borborygme Release », « Archibald Platform », « Prudence ProductOwner ») | C `vue=Roster cartes=12 hors-écran=0 tronqués=0` (3 mesures) ; S `apres/04`, `avant/03` | — |
-| États sélectionné / engagé / incompatible distincts sans dépendre de la couleur | **Corrigé** : un héros choisi mais incompatible gardait la coche ✔ ; priorité des marqueurs : engagé ⚠ > incompatible ✖ > choisi ✔ | S `apres/04b` (✔ choisi, ⚠ engagés, ✖ incompatibles, parchemin = éligible) | — |
-| Hiérarchie portrait → nom → spécialité/niveau → énergie/coût | `HeroCard` (`c7584b4`) | S `apres/04` | — |
+| Grille 4×3, 12 noms entiers (la grille défile verticalement : les 3 rangées recomposées font ~330 px pour 313 px utiles) | `Cards.HeroCard` recomposée, `HeroRoster` dans un `ScrollContainer` (suivi du focus) ; noms sur 2 lignes sans ellipse (« Borborygme Release », « Archibald Platform », « Prudence ProductOwner ») | C `vue=Roster cartes=12 hors-écran=0 tronqués=0` (le contrôle tolère le dépassement par le bas en zone défilante) ; S `apres/04` (rangées 1-2), `apres/04c` (grille défilée, 3ᵉ rangée) | La 3ᵉ rangée n'est visible qu'en défilant |
+| États sélectionné / engagé / incompatible distincts sans dépendre de la couleur | **Corrigé** : un héros choisi mais incompatible gardait la coche ✔ ; priorité des marqueurs : engagé ⚠ > incompatible ✖ > choisi ✔ | S `apres/04b` (régénérée avec la nouvelle carte ; ✔ choisi, ⚠ engagés, ✖ incompatibles, parchemin = éligible) | — |
+| Hiérarchie portrait → nom → « Spécialité · niv. N » → énergie (gauche) / coût (droite) | **Recomposée** : portrait dégagé (plus aucune pastille dessus), nom dessous, spécialité · niveau sous le nom, énergie/coût en bas ; textes suivis par l'état de la carte (lisibles sur parchemin comme sur fond sombre) | S `apres/04`, `apres/04b`, `apres/04c` | — |
 
 ### B5.1-D — Missions et résultats
 
