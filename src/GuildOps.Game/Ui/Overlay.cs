@@ -16,6 +16,8 @@ public abstract partial class Overlay : Control
 {
     protected GameShell Shell { get; private set; } = null!;
     private Control? _returnFocus;
+    private Tween? _fade;
+    private const double FadeSeconds = 0.15;   // fondu d'ouverture (120–180 ms) ; supprimé par « Réduire les animations »
 
     public bool IsOpen => Visible;
 
@@ -53,6 +55,7 @@ public abstract partial class Overlay : Control
         OnOpening();
         GetParent().MoveChild(this, -1);   // le dernier ouvert est dessiné au-dessus des autres
         Visible = true;
+        StartFade();
         Shell.PushOverlay(this);
         InitialFocus().GrabFocus();
     }
@@ -61,12 +64,32 @@ public abstract partial class Overlay : Control
     {
         if (!Visible) return;
         Visible = false;
+        EndFade();
         Shell.PopOverlay(this);
         OnClosed();
         var target = _returnFocus;
         _returnFocus = null;
         if (target is not null && IsInstanceValid(target) && target.IsInsideTree() && target.IsVisibleInTree()) target.GrabFocus();
     }
+
+    /// <summary>Fondu court d'ouverture, purement visuel : l'écran réagit aux touches dès la première image, et rien n'attend la fin du fondu.</summary>
+    private void StartFade()
+    {
+        EndFade();
+        if (Shell.Settings.ReduceMotion) return;
+        Modulate = new Color(1, 1, 1, 0);
+        _fade = CreateTween();
+        _fade.TweenProperty(this, "modulate:a", 1f, FadeSeconds);
+    }
+
+    private void EndFade()
+    {
+        _fade?.Kill();
+        _fade = null;
+        Modulate = Colors.White;
+    }
+
+    public bool Fading => _fade is { } f && f.IsValid() && f.IsRunning();
 
     public override void _Input(InputEvent @event)
     {

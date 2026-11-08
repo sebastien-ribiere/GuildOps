@@ -29,12 +29,43 @@ public sealed class FlowCheck(GameShell shell)
         await _p.Frame(3);
 
         await TitleAndIntro();
+        SampleSilence();
         await HelpFromTitleAndGame();
+        SampleSilence();
+        await SettingsAndComfort();
+        SampleSilence();
 
+        _p.Check("FLOW_SILENCE_CHECK", _players == 0 && _peak < -60f && AudioServer.BusCount >= 1,
+            $"silence : {_silenceSamples} relevés pendant le parcours, {_players} lecteur(s) audio dans l'arbre de scène, crête maximale du mixage {_peak:0.#} dB");
         _p.Check("FLOW_SESSION_CHECK", ReferenceEquals(_session, shell.Session) && shell.Session.Seed == _seed && _seed == shell.Session.Data.Rules.TestSeed,
             $"une seule GameSession pendant tout le parcours, graine de référence {_seed} inchangée");
         GD.Print($"FLOW_RESULT failures={_p.Failures}");
         shell.GetTree().Quit(_p.Failures == 0 ? 0 : 1);
+    }
+
+    /// <summary>Capture après la fin du fondu d'ouverture éventuel (sinon l'écran serait semi-transparent).</summary>
+    private async Task Shot(string name)
+    {
+        await _p.Frame(2);
+        for (var i = 0; i < 60 && shell.TopOverlay is { Fading: true }; i++) await _p.Frame();
+        await _p.ShotNow(name);
+    }
+
+    // ---- Silence : aucun lecteur audio, aucune crête sur le bus maître ----------------------------------------------------------
+    private int _silenceSamples, _players;
+    private float _peak = -200f;
+
+    private void SampleSilence()
+    {
+        _silenceSamples++;
+        void Walk(Node n)
+        {
+            if (n is AudioStreamPlayer or AudioStreamPlayer2D or AudioStreamPlayer3D) _players++;
+            foreach (var c in n.GetChildren()) Walk(c);
+        }
+        Walk(shell.GetTree().Root);
+        for (var bus = 0; bus < AudioServer.BusCount; bus++)
+            _peak = Math.Max(_peak, Math.Max(AudioServer.GetBusPeakVolumeLeftDb(bus, 0), AudioServer.GetBusPeakVolumeRightDb(bus, 0)));
     }
 
     private bool SameSession => ReferenceEquals(_session, shell.Session) && shell.Session.Seed == _seed;
@@ -50,7 +81,7 @@ public sealed class FlowCheck(GameShell shell)
         _p.Check("FLOW_TITLE_CHECK", title.IsOpen && shell.TopOverlay == title && !shell.HasProgress && !title.ResumeButton.Visible
                                       && _p.Focused() is Button { Text: "Nouvelle partie" } && !labels.Any(l => l.StartsWith("Continuer")),
             $"démarrage normal : titre ouvert, session intacte, focus sur « Nouvelle partie », aucun « Continuer » ni « Reprendre » inventé ; menu [{string.Join(" | ", labels)}]");
-        await _p.ShotNow("t01-title");
+        await Shot("t01-title");
 
         // Clavier : la boucle de focus reste dans le titre ; Échap ne ferme rien.
         var seen = new List<string>();
@@ -60,7 +91,7 @@ public sealed class FlowCheck(GameShell shell)
             await _p.Press("ui_focus_next");
         }
         await _p.Press("ui_cancel");
-        await _p.ShotNow("t01b-title-focus");
+        await Shot("t01b-title-focus");
         var inRing = seen.All(t => labels.Contains(t)) && seen.Distinct().Count() == labels.Count;
         _p.Check("FLOW_TITLE_KEYBOARD_CHECK", inRing && title.IsOpen && shell.TopOverlay == title,
             $"Tab parcourt les {labels.Count} boutons du titre sans en sortir ({string.Join(" > ", seen)}) ; Échap ne ferme pas le titre");
@@ -73,7 +104,7 @@ public sealed class FlowCheck(GameShell shell)
         _p.Check("FLOW_INTRO_CHECK", shell.Intro.IsOpen && !title.IsOpen && !shell.Confirm.IsOpen && shell.Session.Events.Count == eventsBefore && SameSession
                                       && _p.Focused() is Button { Text: "Commencer" },
             "« Nouvelle partie » sur une session intacte : introduction affichée sans confirmation, focus sur « Commencer », rien n'a avancé dans Core");
-        await _p.ShotNow("t02-intro");
+        await Shot("t02-intro");
 
         // « Commencer » mène au hall.
         await _p.Press("ui_accept");
@@ -95,7 +126,7 @@ public sealed class FlowCheck(GameShell shell)
         await _p.Frame(2);
         var help = shell.Help;
         var ok = help.IsOpen && shell.Current == View.Hall && help.Page == 0 && _p.Focused() == help.NextButton;
-        await _p.ShotNow("h5-help-ingame");
+        await Shot("h5-help-ingame");
         await _p.Press("ui_cancel");
         await _p.Frame(2);
         _p.Check("FLOW_HELP_INGAME_CHECK", ok && !help.IsOpen && shell.Current == View.Hall && _p.Focused() == before && snap == Probe.Snapshot(shell.Session) && SameSession,
@@ -126,7 +157,7 @@ public sealed class FlowCheck(GameShell shell)
             pages.Add($"{help.Page + 1}/{help.PageCount}");
             allFit &= help.Body.GetContentHeight() <= help.BodyScroll.Size.Y && help.Body.GetParsedText().Length > 60;
             okTexture &= B53.Tutorial(page + 1).GetSize() == new Vector2(192, 128);
-            await _p.ShotNow($"h{page + 1}-help-page{page + 1}");
+            await Shot($"h{page + 1}-help-page{page + 1}");
         }
         var lastLabel = help.NextButton.Text;
         // Retour arrière au clavier : Précédent.
@@ -146,7 +177,7 @@ public sealed class FlowCheck(GameShell shell)
         Find(help, "Revoir")?.EmitSignal(BaseButton.SignalName.Pressed);
         await _p.Frame(2);
         var replay = shell.Intro.IsOpen && shell.TopOverlay == shell.Intro && help.IsOpen;
-        await _p.ShotNow("h6-help-replay-intro");
+        await Shot("h6-help-replay-intro");
         await _p.Press("ui_cancel");
         await _p.Frame(2);
         var backToHelp = !shell.Intro.IsOpen && shell.TopOverlay == help && shell.Current == View.Hall;
@@ -163,5 +194,144 @@ public sealed class FlowCheck(GameShell shell)
         await _p.Frame(3);
         _p.Check("FLOW_SKIP_INTRO_CHECK", !shell.AnyOverlayOpen && shell.Current == View.Hall && SameSession && snap == Probe.Snapshot(shell.Session),
             "Échap sur l'introduction = « Passer » : hall, aucune modale, session intacte");
+    }
+
+    // ---- Paramètres, confort, animations réduites -------------------------------------------------------------------------
+
+    private async Task<bool> WaitFor(Func<bool> condition, int frames = 90)
+    {
+        for (var i = 0; i < frames && !condition(); i++) await _p.Frame();
+        return condition();
+    }
+
+    private async Task SettingsAndComfort()
+    {
+        var set = shell.Settings;
+        var view = shell.SettingsView;
+        var win = shell.GetWindow();
+        var snap = Probe.Snapshot(shell.Session);
+
+        // Le « Menu » du HUD ramène au titre ; « Paramètres » s'ouvre au clavier ; la partie est intacte.
+        Find(shell, "Menu")?.EmitSignal(BaseButton.SignalName.Pressed);
+        await _p.Frame(3);
+        await _p.TabTo(c => c is Button { Text: "Paramètres" });
+        var origin = _p.Focused();
+        await _p.Press("ui_accept");
+        await _p.Frame(3);
+        await Shot("p1-settings");
+        _p.Check("FLOW_SETTINGS_OPEN_CHECK", view.IsOpen && shell.TopOverlay == view && _p.Focused() == view.FullscreenButton && !set.Fullscreen && !set.ReduceMotion
+                                              && view.FullscreenButton.Text.EndsWith("NON") && view.MotionButton.Text.EndsWith("NON"),
+            $"Paramètres ouverts depuis le titre, états écrits en toutes lettres (« {view.FullscreenButton.Text} » · « {view.MotionButton.Text} »)");
+
+        // Rendu net : résolution logique 640×360, mise à l'échelle entière, filtre au plus proche.
+        var filter = (int)ProjectSettings.GetSetting("rendering/textures/canvas_textures/default_texture_filter");
+        var visible = shell.GetViewport().GetVisibleRect().Size;
+        _p.Check("FLOW_RENDER_CHECK", filter == 0 && win.ContentScaleMode == Window.ContentScaleModeEnum.Viewport && win.ContentScaleStretch == Window.ContentScaleStretchEnum.Integer
+                                       && win.ContentScaleSize == new Vector2I(640, 360) && visible == new Vector2(640, 360),
+            $"filtre nearest ({filter}), mise à l'échelle {win.ContentScaleMode}/{win.ContentScaleStretch}, résolution logique {win.ContentScaleSize}, viewport {visible}");
+
+        // Échelle entière : réellement appliquée à la fenêtre.
+        var max = set.MaxScale;
+        var windowed = DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Windowed;
+        var results = new List<string>();
+        var scaleOk = windowed;
+        if (max >= 2)
+        {
+            await _p.TabTo(c => c == view.SmallerButton);
+            await _p.Press("ui_accept");
+            scaleOk &= await WaitFor(() => win.Size == new Vector2I(640, 360));
+            results.Add($"x1 -> {win.Size}");
+            await _p.TabTo(c => c == view.LargerButton || c == view.FullscreenButton || c == view.MotionButton);
+            view.LargerButton.EmitSignal(BaseButton.SignalName.Pressed);
+            scaleOk &= await WaitFor(() => win.Size == new Vector2I(1280, 720));
+            results.Add($"x2 -> {win.Size}");
+        }
+        scaleOk &= set.Scale == 2;
+        _p.Check("FLOW_SCALE_CHECK", scaleOk && set.MaxScale == max, $"échelle entière appliquée à la fenêtre ({string.Join(", ", results)}) ; maximum sur cet écran : x{max}");
+
+        // Plein écran : appliqué au système, échelle automatique (boutons d'échelle écartés), puis retour fenêtré à 1280×720.
+        await _p.TabTo(c => c == view.FullscreenButton);
+        await _p.Press("ui_accept");
+        var full = await WaitFor(() => DisplayServer.WindowGetMode() is DisplayServer.WindowMode.Fullscreen or DisplayServer.WindowMode.ExclusiveFullscreen);
+        await _p.Frame(10);
+        var noScale = view.SmallerButton.Disabled && view.LargerButton.Disabled && view.FullscreenButton.Text.EndsWith("OUI");
+        var viewportInFull = shell.GetViewport().GetVisibleRect().Size == new Vector2(640, 360);
+        await Shot("p2-settings-fullscreen");
+        await _p.Press("ui_accept");
+        var back = await WaitFor(() => DisplayServer.WindowGetMode() == DisplayServer.WindowMode.Windowed);
+        back &= await WaitFor(() => win.Size == new Vector2I(1280, 720));
+        _p.Check("FLOW_FULLSCREEN_CHECK", full && noScale && viewportInFull && back && !set.Fullscreen,
+            $"plein écran appliqué ({full}), échelle automatique sans boutons actifs ({noScale}), viewport logique 640×360 ({viewportInFull}), retour fenêtré {win.Size} ({back})");
+
+        // Réduire les animations : l'ambiance du hall est coupée immédiatement, puis rétablie.
+        var hall = shell.GetNode<Control>("Content/Hall");
+        var fx = hall.GetChildren().OfType<AmbientFx>().ToList();
+        var f0 = fx.Select(f => ((AtlasTexture)f.Texture).Region.Position.X).ToList();
+        await _p.Frame(40);
+        var f1 = fx.Select(f => ((AtlasTexture)f.Texture).Region.Position.X).ToList();
+        var animatedBefore = fx.Count == 2 && fx.All(f => f.Visible && f.IsProcessing()) && !f0.SequenceEqual(f1);
+        await _p.TabTo(c => c == view.MotionButton);
+        await _p.Press("ui_accept");
+        await _p.Frame(2);
+        var frozen = fx.All(f => !f.Visible && !f.IsProcessing()) && set.ReduceMotion && view.MotionButton.Text.EndsWith("OUI");
+        await Shot("p3-settings-reduced");
+        _p.Check("FLOW_REDUCE_MOTION_CHECK", animatedBefore && frozen,
+            $"ambiance du hall animée avant ({animatedBefore}) ; après « Réduire les animations » : masquée et arrêtée immédiatement ({frozen}), état écrit « {view.MotionButton.Text} »");
+
+        // Fondu d'ouverture : présent par défaut, supprimé en mode réduit.
+        shell.OpenHelp();
+        await _p.Frame(1);
+        var fadeReduced = shell.Help.Fading;
+        shell.Help.Close();
+        set.SetReduceMotion(false);
+        await _p.Frame(2);
+        var ambientBack = fx.All(f => f.Visible && f.IsProcessing());
+        shell.OpenHelp();
+        await _p.Frame(1);
+        var fadeNormal = shell.Help.Fading;
+        shell.Help.Close();
+        await _p.Frame(2);
+        _p.Check("FLOW_FADE_CHECK", !fadeReduced && fadeNormal && ambientBack,
+            $"fondu d'ouverture : absent en mode réduit ({!fadeReduced}), présent sinon ({fadeNormal}) ; ambiance rétablie en mode normal ({ambientBack})");
+
+        // Préférences : fichier ConfigFile limité aux réglages d'affichage ; fichier absent, illisible ou aux valeurs absurdes = réglages par défaut.
+        var path = $"{OS.GetUserDataDir()}/flowcheck-display.cfg";
+        var a = new DisplaySettings(win, path);
+        a.SetReduceMotion(true);
+        var cfg = new ConfigFile();
+        var readOk = cfg.Load(path) == Error.Ok;
+        var sections = cfg.GetSections();
+        var keys = readOk && sections.Length == 1 ? cfg.GetSectionKeys("display").Order().ToArray() : [];
+        var b = new DisplaySettings(win, path);
+        var loaded = b.Load() && b.ReduceMotion && !b.Fullscreen && b.Scale == 2;
+        File.WriteAllText(path, "[display]\nfullscreen=\"oui\"\nscale=99\nreduce_motion=7\n");
+        var c = new DisplaySettings(win, path);
+        var absurd = c.Load() && !c.Fullscreen && !c.ReduceMotion && c.Scale == c.MaxScale;
+        File.WriteAllText(path, "\u0001\u0002 pas un fichier de configuration {{{");
+        var d = new DisplaySettings(win, path);
+        d.Load();   // aucune exception, quel que soit le contenu
+        var garbage = !d.Fullscreen && !d.ReduceMotion && d.Scale == 2;
+        File.Delete(path);
+        var missing = !new DisplaySettings(win, path).Load();
+        _p.Check("FLOW_PREFS_CHECK", readOk && sections.SequenceEqual(["display"]) && keys.SequenceEqual(["fullscreen", "reduce_motion", "scale"]) && loaded && absurd && garbage && missing,
+            $"ConfigFile : une seule section « display » ({string.Join(",", keys)}), relecture exacte ({loaded}), valeurs absurdes bornées ({absurd}), fichier illisible ({garbage}) ou absent ({missing}) = réglages par défaut, sans exception");
+
+        // Fermer : Échap ramène au titre, focus restitué à « Paramètres », partie intacte.
+        await _p.TabTo(c2 => c2 == view.FullscreenButton);
+        shell.SettingsView.Close();
+        await _p.Frame(2);
+        // (le titre est toujours ouvert dessous)
+        var titleStill = shell.Title.IsOpen && shell.TopOverlay == shell.Title;
+        shell.OpenSettings();
+        await _p.Frame(2);
+        await _p.Press("ui_cancel");
+        await _p.Frame(2);
+        _p.Check("FLOW_SETTINGS_CLOSE_CHECK", titleStill && !view.IsOpen && shell.TopOverlay == shell.Title && _p.Focused() is Button { Text: "Paramètres" } && Probe.Snapshot(shell.Session) == snap && SameSession,
+            "Échap ferme les paramètres, le titre reste dessous avec le focus sur « Paramètres », session intacte");
+        await _p.TabTo(c2 => c2 is Button { Text: "Nouvelle partie" });
+        await _p.Press("ui_accept");
+        await _p.Frame(2);
+        await _p.Press("ui_cancel");
+        await _p.Frame(3);
     }
 }

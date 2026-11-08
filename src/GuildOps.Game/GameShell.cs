@@ -20,6 +20,9 @@ public partial class GameShell : Control
 
     public GameSession Session { get; private set; } = null!;
 
+    /// <summary>Préférences d'affichage et de confort (hors Core, hors partie).</summary>
+    public DisplaySettings Settings { get; private set; } = null!;
+
     public string? SelectedHeroId { get; private set; }
     public string? SelectedOfferId { get; private set; }
     public string? SelectedQuestId { get; private set; }
@@ -45,6 +48,7 @@ public partial class GameShell : Control
     private IntroScreen _intro = null!;
     private ConfirmDialog _confirm = null!;
     private HelpScreen _help = null!;
+    private SettingsScreen _settingsScreen = null!;
     private readonly List<Overlay> _overlays = [];
     private int _pristineEvents;
 
@@ -73,6 +77,11 @@ public partial class GameShell : Control
 
         Automated = OS.GetCmdlineUserArgs().Contains("--autoplay");
         QuitAction = () => GetTree().Quit();
+
+        // Préférences : lues et appliquées seulement pour un joueur (jamais en lancement automatisé, qui doit rester déterministe et sans fichier).
+        var flowCheck = OS.GetCmdlineUserArgs().Contains("--flowcheck");
+        Settings = new DisplaySettings(GetWindow(), Automated || flowCheck ? null : "user://display.cfg");
+        if (Settings.Load()) Settings.ApplyWindow();
 
         var data = GameDataLoader.LoadEmbedded();
         Session = GameSession.Start(data, data.Rules.TestSeed);   // l'UNIQUE session de la partie ; la graine de référence ne change jamais
@@ -108,7 +117,7 @@ public partial class GameShell : Control
         else
         {
             _title.Open();   // démarrage normal : le titre d'abord ; le hall est déjà prêt dessous (même session)
-            if (OS.GetCmdlineUserArgs().Contains("--flowcheck")) _ = new FlowCheck(this).Run();
+            if (flowCheck) _ = new FlowCheck(this).Run();
         }
     }
 
@@ -126,6 +135,7 @@ public partial class GameShell : Control
         _title = AddOverlay<TitleScreen>("TitleScreen");
         _intro = AddOverlay<IntroScreen>("IntroScreen");
         _help = AddOverlay<HelpScreen>("HelpScreen");
+        _settingsScreen = AddOverlay<SettingsScreen>("SettingsScreen");
         _confirm = AddOverlay<ConfirmDialog>("ConfirmDialog");
     }
 
@@ -137,6 +147,7 @@ public partial class GameShell : Control
     public IntroScreen Intro => _intro;
     public ConfirmDialog Confirm => _confirm;
     public HelpScreen Help => _help;
+    public SettingsScreen SettingsView => _settingsScreen;
 
     public void PushOverlay(Overlay overlay) => _overlays.Add(overlay);
     public void PopOverlay(Overlay overlay) => _overlays.Remove(overlay);
@@ -153,6 +164,9 @@ public partial class GameShell : Control
 
     /// <summary>Aide en quatre pages, consultable à tout moment (titre, HUD, F1). Ne modifie jamais la session.</summary>
     public void OpenHelp() => _help.Open();
+
+    /// <summary>Paramètres d'affichage et de confort (depuis le titre ; en jeu, via « Menu »).</summary>
+    public void OpenSettings() => _settingsScreen.Open();
 
     /// <summary>« Reprendre » : retour à la partie en mémoire, dans la vue où on l'avait laissée. Aucune écriture dans Core.</summary>
     public void ResumeGame()

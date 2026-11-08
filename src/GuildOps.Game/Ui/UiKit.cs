@@ -193,7 +193,12 @@ public static class UiKit
     public static PanelContainer Panel(string kind, int content = 6)
     {
         var panel = new PanelContainer();
-        panel.AddThemeStyleboxOverride("panel", Nine($"ui/panel_{kind}_9slice.png", 8, content, bottomMargin: 9));
+        var box = Nine($"ui/panel_{kind}_9slice.png", 8, content, bottomMargin: 9);
+        // Correctif B5.3 : le centre du PNG contient quelques pixels isolés (« poussière ») qui, étirés, devenaient de gros carrés gris sur les
+        // grands panneaux. En mosaïque à l'échelle 1, ils redeviennent un grain discret. Le PNG lui-même n'est pas modifié.
+        box.AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Tile;
+        box.AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Tile;
+        panel.AddThemeStyleboxOverride("panel", box);
         return panel;
     }
 
