@@ -10,6 +10,7 @@ public enum FxKind { Succes, Echec, Recompense, Incident }
 /// rafraîchissement ou une navigation. Il ne tire rien, ne mute rien, ne bloque aucune entrée (<c>MouseFilter.Ignore</c>) et s'interrompt
 /// à la première touche ou au premier clic, ou quand son parent est reconstruit.
 /// Les effets d'un même résultat s'enchaînent dans l'ordre (verdict, puis prime, puis incident) dans un seul emplacement.
+/// « Réduire les animations » : aucun effet n'est lancé, et un effet en cours s'interrompt aussitôt ; le verdict reste affiché en texte.
 /// </summary>
 public partial class CosmeticFx : TextureRect
 {
@@ -21,8 +22,24 @@ public partial class CosmeticFx : TextureRect
     /// <summary>Nombre d'emplacements d'effet actuellement à l'écran (0 quand tout est terminé ou interrompu).</summary>
     public static int Active { get; private set; }
 
-    public override void _EnterTree() => Active++;
-    public override void _ExitTree() => Active--;
+    private DisplaySettings _settings = null!;
+
+    public override void _EnterTree()
+    {
+        Active++;
+        _settings.Changed += OnSettingsChanged;
+    }
+
+    public override void _ExitTree()
+    {
+        Active--;
+        _settings.Changed -= OnSettingsChanged;
+    }
+
+    private void OnSettingsChanged()
+    {
+        if (_settings.ReduceMotion) QueueFree();
+    }
 
     private static double FrameSeconds(FxKind kind) => kind == FxKind.Succes ? 0.09 : 0.10;
 
@@ -39,10 +56,12 @@ public partial class CosmeticFx : TextureRect
     private bool _running;
 
     /// <summary>Crée l'emplacement (32×32, ancré en haut à droite du parent) et met les effets en file ; le premier démarre aussitôt.</summary>
-    public static CosmeticFx Attach(Control parent, IEnumerable<FxKind> sequence)
+    public static CosmeticFx? Attach(Control parent, IEnumerable<FxKind> sequence, DisplaySettings settings)
     {
+        if (settings.ReduceMotion) return null;
         var fx = new CosmeticFx
         {
+            _settings = settings,
             CustomMinimumSize = new Vector2(Size32, Size32), Size = new Vector2(Size32, Size32),
             MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.Nearest, TopLevel = false,
             FocusMode = FocusModeEnum.None,

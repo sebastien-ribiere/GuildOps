@@ -1,0 +1,205 @@
+{
+  "pack": "GuildOps-B5.3-DA",
+  "version": "1.0.0",
+  "build": "art-direction-delivery",
+  "runtime_png_count": 27,
+  "source_of_truth": "B5.2 merged or awaiting user PR; do not alter Core",
+  "ui_font": "Pixeloid Sans 9px (18px verdict only); font files NOT included",
+  "audio": "silence by default, no music or sound in B5.3",
+  "runtime_root": "res://Assets/b5_3/",
+  "logical_resolution": [
+    640,
+    360
+  ],
+  "integrity": [
+    {
+      "path": "assets/b5_3/backgrounds/title_640x360.png",
+      "width": 640,
+      "height": 360,
+      "mode": "RGBA",
+      "sha256": "9597e7ffad047d51508220026c5b18e86c7e51fb808f3d965100230215004952"
+    },
+    {
+      "path": "assets/b5_3/branding/app_icon_256.png",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "sha256": "9ecb253775d6a1edd5e2946ef9174c1d71633d2f9f51eb7870e400b6844b10e5"
+    },
+    {
+      "path": "assets/b5_3/branding/guild_crest_128.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "sha256": "3ee12e69c595f7a82892045af37784a4e473aa0ff858f902fc5385fea10d0b1f"
+    },
+    {
+      "path": "assets/b5_3/branding/guild_crest_256.png",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "sha256": "237bada145f45cd6a3b48f0e2a7152f008204d918ece98d7bbf3f13d3db1d4db"
+    },
+    {
+      "path": "assets/b5_3/branding/guild_crest_64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "sha256": "e25b856b7c535fa045f67fac4f74723da2416fb27ed0a5182c1b721c890709d1"
+    },
+    {
+      "path": "assets/b5_3/icons/back_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "26d0998cbc234154ebbd7452e5bb03f992d3159323ea2ab82963a46439828bad"
+    },
+    {
+      "path": "assets/b5_3/icons/credits_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "cdb5cb66edcee5d4bdeb3fac187974a8f3bf1576cc5f6a9fa6f01d240679dfa6"
+    },
+    {
+      "path": "assets/b5_3/icons/exit_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "09217db45af3463f8adff158dd13c797b1df68c3b2f9f161293efbb0b54c9556"
+    },
+    {
+      "path": "assets/b5_3/icons/fullscreen_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "75de8e785f3941b3c8a972a8ed109f5615afd59be4c6d63bf9d450d4194b115c"
+    },
+    {
+      "path": "assets/b5_3/icons/help_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "7787d064b389d5014243001c60212adf369bce873068c2bcbb47793fd3b6eb99"
+    },
+    {
+      "path": "assets/b5_3/icons/info_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "89b02789fe465a8551fb8f9bec2bb2fdb2574cc970bc13b9724fa01df3223ac5"
+    },
+    {
+      "path": "assets/b5_3/icons/keyboard_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "8132bd1d67ece46a3a3395d9727eb878392b1b7756bf950ba3efdeb06f8d58b2"
+    },
+    {
+      "path": "assets/b5_3/icons/play_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "8a943a4ef92dfad2bf2e2efa960dce2f34dd0134d6b2aefe5485da0c32661b4a"
+    },
+    {
+      "path": "assets/b5_3/icons/reduce_motion_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "c098a988be32be87d75b7e4b89a2fad6cc12f2bd4336a324793169678ec81ed7"
+    },
+    {
+      "path": "assets/b5_3/icons/settings_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "e600762b1e6550202090db1577a199f4a6c5d2727dda880c8357072dd5608f45"
+    },
+    {
+      "path": "assets/b5_3/icons/trophy_16.png",
+      "width": 16,
+      "height": 16,
+      "mode": "RGBA",
+      "sha256": "2eda2602338f6497b528711777b5df4f354c9cc5cefc8de4aa0d6ce11bf0af1b"
+    },
+    {
+      "path": "assets/b5_3/scenes/defeat_384x256.png",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "sha256": "6bb14b3ba2e92324f6a115cc9a9b9f7da178e55701dfd5d0adf632fcb7ca1c89"
+    },
+    {
+      "path": "assets/b5_3/scenes/intro_384x256.png",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "sha256": "cf204e61e1096b749e63a2f03cacaa2fb2c4f90517941797dd215d8c091694d5"
+    },
+    {
+      "path": "assets/b5_3/scenes/victory_384x256.png",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "sha256": "1f84895356e7a85798f327141ca13751fd8cd69e0e948971e8614ac0c55cb035"
+    },
+    {
+      "path": "assets/b5_3/tutorial/step_1_192x128.png",
+      "width": 192,
+      "height": 128,
+      "mode": "RGBA",
+      "sha256": "d7a19895a0abbac1ba85a988a0ac509d5333d3588f6449f0518f24d907fdec3e"
+    },
+    {
+      "path": "assets/b5_3/tutorial/step_2_192x128.png",
+      "width": 192,
+      "height": 128,
+      "mode": "RGBA",
+      "sha256": "030ec841889bcd27118e32cd1da3605c68a6cce84eff10d46455e2611abd4e9b"
+    },
+    {
+      "path": "assets/b5_3/tutorial/step_3_192x128.png",
+      "width": 192,
+      "height": 128,
+      "mode": "RGBA",
+      "sha256": "d6e40865500496b87bc15b70f215863515a2c5c5f65aa15ffb057a2f45b41d74"
+    },
+    {
+      "path": "assets/b5_3/tutorial/step_4_192x128.png",
+      "width": 192,
+      "height": 128,
+      "mode": "RGBA",
+      "sha256": "8136004f9d8551e50d54d053aff84de4dda60c34b0dac0f92599fe36b720264a"
+    },
+    {
+      "path": "assets/b5_3/ui/divider_160x8.png",
+      "width": 160,
+      "height": 8,
+      "mode": "RGBA",
+      "sha256": "dd87928348244b01984a56d217468a87528dda2ea43f3c6c66712844d482dbac"
+    },
+    {
+      "path": "assets/b5_3/ui/ribbon_defeat_192x32.png",
+      "width": 192,
+      "height": 32,
+      "mode": "RGBA",
+      "sha256": "25909f78fbf2e7201625fd4a2cd23cb486a8af46fd4f4dbfeb7b27a7c6e58141"
+    },
+    {
+      "path": "assets/b5_3/ui/ribbon_title_192x32.png",
+      "width": 192,
+      "height": 32,
+      "mode": "RGBA",
+      "sha256": "cba1b1e1b223b11fc90922f3fbb486eae1aa3a5db0668f898701f8ae8db4d52b"
+    },
+    {
+      "path": "assets/b5_3/ui/ribbon_victory_192x32.png",
+      "width": 192,
+      "height": 32,
+      "mode": "RGBA",
+      "sha256": "9f00d7a2f0fd1cc181aa4f59b4472ebb3835432467bf0c04afb77ba90b0beed3"
+    }
+  ]
+}

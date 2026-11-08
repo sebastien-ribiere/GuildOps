@@ -61,7 +61,7 @@ public partial class QuestResult : PanelBase
         var sequence = new List<FxKind> { o.Success ? FxKind.Succes : FxKind.Echec };
         if (o.RewardPaidCopper > 0) sequence.Add(FxKind.Recompense);
         if (o.Incident is not null) sequence.Add(FxKind.Incident);
-        CosmeticFx.Attach(host, sequence);
+        CosmeticFx.Attach(host, sequence, Shell.Settings);
     }
 
     public override void FocusFirst() => (FirstButton(_list) ?? FirstButton(_detail))?.GrabFocus();

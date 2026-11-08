@@ -163,9 +163,10 @@ public static class UiKit
         return label;
     }
 
-    public static TextureRect Icon(string name, float scale = 1f) => new()
+    /// <summary>Pictogramme 16×16 : <c>icons/</c> (kit B5) par défaut, ou un autre dossier (ex. <see cref="B53.Icons"/> pour le kit B5.3).</summary>
+    public static TextureRect Icon(string name, float scale = 1f, string folder = "icons") => new()
     {
-        Texture = Tex($"icons/{name}_16.png"),
+        Texture = Tex($"{folder}/{name}_16.png"),
         CustomMinimumSize = new Vector2(16 * scale, 16 * scale),
         StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -173,11 +174,11 @@ public static class UiKit
     };
 
     /// <summary>Icône 16 px + texte. Avec <paramref name="wrap"/>, le texte passe à la ligne sous l'icône alignée en haut.</summary>
-    public static HBoxContainer IconText(string icon, string text, Color? color = null, bool wrap = false)
+    public static HBoxContainer IconText(string icon, string text, Color? color = null, bool wrap = false, string folder = "icons")
     {
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 1);
-        var glyph = Icon(icon);
+        var glyph = Icon(icon, 1f, folder);
         if (wrap) glyph.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
         row.AddChild(glyph);
         var label = Lbl(text, color, wrap: wrap);
@@ -192,7 +193,12 @@ public static class UiKit
     public static PanelContainer Panel(string kind, int content = 6)
     {
         var panel = new PanelContainer();
-        panel.AddThemeStyleboxOverride("panel", Nine($"ui/panel_{kind}_9slice.png", 8, content, bottomMargin: 9));
+        var box = Nine($"ui/panel_{kind}_9slice.png", 8, content, bottomMargin: 9);
+        // Correctif B5.3 : le centre du PNG contient quelques pixels isolés (« poussière ») qui, étirés, devenaient de gros carrés gris sur les
+        // grands panneaux. En mosaïque à l'échelle 1, ils redeviennent un grain discret. Le PNG lui-même n'est pas modifié.
+        box.AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Tile;
+        box.AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Tile;
+        panel.AddThemeStyleboxOverride("panel", box);
         return panel;
     }
 
