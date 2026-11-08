@@ -19,7 +19,7 @@ public partial class AssignmentPanel : PanelBase
         var box = new VBoxContainer();
         panel.AddChild(box);
 
-        _title = UiKit.Lbl("AFFECTATION", UiKit.Gold, clip: true);
+        _title = UiKit.Title("AFFECTATION");
         box.AddChild(_title);
         _detail = UiKit.Rich(onLight: false);
         box.AddChild(_detail);

@@ -2,7 +2,13 @@ using Godot;
 
 namespace GuildOps.Game.Ui;
 
-/// <summary>Thème 16 bits : police, 9-slices, boutons et fabriques de widgets. Aucune logique métier.</summary>
+/// <summary>
+/// Thème 16 bits : deux styles typographiques centraux, 9-slices, boutons et fabriques de widgets. Aucune logique métier.
+/// <list type="bullet">
+/// <item><b>Titre</b> — Silkscreen 8 px (capitales) : titres courts, boutons, badges. Fabriques <see cref="Title"/> / <see cref="AsTitle{T}"/>.</item>
+/// <item><b>Corps</b> — Jersey 15 (OFL) : descriptions, valeurs, journaux. C'est le défaut du thème : <see cref="Lbl"/>, <see cref="Rich"/>.</item>
+/// </list>
+/// </summary>
 public static class UiKit
 {
     public const string AssetRoot = "res://Assets/";
@@ -12,14 +18,23 @@ public static class UiKit
     public static readonly Color Cream = new(0.95f, 0.89f, 0.75f);
     public static readonly Color Gold = new(0.94f, 0.75f, 0.31f);
     public static readonly Color Muted = new(0.55f, 0.50f, 0.58f);
+    public static readonly Color MutedOnLight = new(0.36f, 0.30f, 0.30f);
     public static readonly Color GoodOnLight = new(0.14f, 0.40f, 0.12f);
     public static readonly Color BadOnLight = new(0.62f, 0.10f, 0.10f);
     public static readonly Color GoodOnDark = new(0.56f, 0.85f, 0.44f);
     public static readonly Color BadOnDark = new(0.97f, 0.45f, 0.45f);
+    /// <summary>Focus clavier : cadre vif de 2 px liseré d'encre, lisible sur parchemin clair comme sur panneau sombre.</summary>
+    public static readonly Color FocusColor = new(1f, 0.87f, 0.2f);
+
+    public const int TitleSize = 8;
+    public const int BodySize = 15;
 
     private static readonly Dictionary<string, Texture2D> Cache = [];
 
+    /// <summary>Style « titre » : Silkscreen 8 px.</summary>
     public static Font Font { get; private set; } = null!;
+    /// <summary>Style « corps » : Jersey 15 à 15 px (taille native = grille exacte), minuscules accentuées.</summary>
+    public static Font BodyFont { get; private set; } = null!;
     public static Theme Theme { get; private set; } = null!;
 
     public static Texture2D Tex(string relativePath)
@@ -29,27 +44,36 @@ public static class UiKit
         return texture;
     }
 
-    public static void Init()
+    private static FontFile PixelFont(string file)
     {
-        var font = GD.Load<FontFile>(AssetRoot + "fonts/Silkscreen-Regular.ttf");
+        var font = GD.Load<FontFile>(AssetRoot + "fonts/" + file);
         // Police pixel : pas de lissage, pas de positionnement sous-pixel.
         font.Antialiasing = TextServer.FontAntialiasing.None;
         font.SubpixelPositioning = TextServer.SubpixelPositioning.Disabled;
         font.Hinting = TextServer.Hinting.None;
         font.GenerateMipmaps = false;
-        Font = font;
+        return font;
+    }
 
-        var theme = new Theme { DefaultFont = font, DefaultFontSize = 8 };
+    public static void Init()
+    {
+        Font = PixelFont("Silkscreen-Regular.ttf");
+        BodyFont = PixelFont("Jersey15-Regular.ttf");
+
+        var theme = new Theme { DefaultFont = BodyFont, DefaultFontSize = BodySize };
         theme.SetColor("font_color", "Label", Cream);
         theme.SetColor("default_color", "RichTextLabel", Cream);
-        theme.SetFontSize("normal_font_size", "RichTextLabel", 8);
-        theme.SetFontSize("bold_font_size", "RichTextLabel", 8);
-        theme.SetFont("bold_font", "RichTextLabel", font);
+        theme.SetFont("normal_font", "RichTextLabel", BodyFont);
+        theme.SetFontSize("normal_font_size", "RichTextLabel", BodySize);
+        theme.SetFont("bold_font", "RichTextLabel", Font);
+        theme.SetFontSize("bold_font_size", "RichTextLabel", TitleSize);
         theme.SetConstant("separation", "VBoxContainer", 3);
         theme.SetConstant("separation", "HBoxContainer", 3);
-        theme.SetConstant("line_spacing", "Label", 1);
-        theme.SetConstant("line_separation", "RichTextLabel", 1);
+        theme.SetConstant("line_spacing", "Label", 0);
+        theme.SetConstant("line_separation", "RichTextLabel", 0);
 
+        theme.SetFont("font", "Button", Font);
+        theme.SetFontSize("font_size", "Button", TitleSize);
         theme.SetStylebox("normal", "Button", ButtonBox("button_normal_128x32.png"));
         theme.SetStylebox("hover", "Button", ButtonBox("button_hover_128x32.png"));
         theme.SetStylebox("hover_pressed", "Button", ButtonBox("button_hover_128x32.png"));
@@ -79,22 +103,50 @@ public static class UiKit
         return box;
     }
 
+    /// <summary>Cadre de focus clavier : 2 px vifs + liseré d'encre extérieur.</summary>
     public static StyleBoxFlat FocusBox() => new()
     {
         BgColor = new Color(0, 0, 0, 0),
-        BorderColor = Gold,
-        BorderWidthLeft = 1, BorderWidthRight = 1, BorderWidthTop = 1, BorderWidthBottom = 1,
+        BorderColor = FocusColor,
+        BorderWidthLeft = 2, BorderWidthRight = 2, BorderWidthTop = 2, BorderWidthBottom = 2,
         DrawCenter = false,
+        ShadowColor = Ink, ShadowSize = 1,
     };
+
+    /// <summary>Cadre plat (puces, bandeaux) : fond, bordure et marges.</summary>
+    public static StyleBoxFlat Flat(Color fill, Color? border = null, int borderWidth = 1, int margin = 2)
+    {
+        var box = new StyleBoxFlat { BgColor = fill };
+        if (border is { } b)
+        {
+            box.BorderColor = b;
+            box.SetBorderWidthAll(borderWidth);
+        }
+        box.SetContentMarginAll(margin);
+        return box;
+    }
 
     // ---- Fabriques -------------------------------------------------------------------------------------------
 
+    /// <summary>Texte « corps » (Jersey 10).</summary>
     public static Label Lbl(string text, Color? color = null, bool wrap = false, bool clip = false)
     {
         var label = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
         if (color is { } c) label.AddThemeColorOverride("font_color", c);
         if (wrap) label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         if (clip) label.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+        return label;
+    }
+
+    /// <summary>Texte « titre » (Silkscreen 8 px) : titres courts, badges, verdicts.</summary>
+    public static Label Title(string text, Color? color = null, bool clip = false)
+        => AsTitle(Lbl(text, color ?? Gold, clip: clip));
+
+    /// <summary>Bascule un libellé existant sur le style « titre ». <paramref name="size"/> doit rester un multiple de 8 pour rester net.</summary>
+    public static T AsTitle<T>(T label, int size = TitleSize) where T : Label
+    {
+        label.AddThemeFontOverride("font", Font);
+        label.AddThemeFontSizeOverride("font_size", size);
         return label;
     }
 

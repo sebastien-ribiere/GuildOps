@@ -4,13 +4,40 @@ using GuildOps.Core.Engine;
 
 namespace GuildOps.Game.Ui;
 
+/// <summary>Libellés d'affichage (accents) des énumérations de Core. Présentation uniquement.</summary>
+public static class Names
+{
+    public static string Category(QuestCategory c) => c switch
+    {
+        QuestCategory.Corvee => "Corvée", QuestCategory.Village => "Village", QuestCategory.Aventure => "Aventure",
+        QuestCategory.Notable => "Notable", _ => "Royale",
+    };
+
+    public static string Skill(Skill s) => s switch
+    {
+        Core.Domain.Skill.Ingenierie => "Ingénierie", Core.Domain.Skill.Magie => "Magie",
+        Core.Domain.Skill.Exploration => "Exploration", _ => "Combat",
+    };
+
+    /// <summary>Couleur de pastille par catégorie : toujours accompagnée du texte, jamais seule porteuse du sens.</summary>
+    public static Color CategoryColor(QuestCategory c) => c switch
+    {
+        QuestCategory.Corvee => new Color(0.42f, 0.36f, 0.30f),
+        QuestCategory.Village => new Color(0.17f, 0.40f, 0.22f),
+        QuestCategory.Aventure => new Color(0.17f, 0.32f, 0.62f),
+        QuestCategory.Notable => new Color(0.46f, 0.22f, 0.56f),
+        _ => new Color(0.60f, 0.38f, 0.04f),
+    };
+}
+
 /// <summary>Fabriques de cartes (héros, offre) : présentation pure, états visuels dictés par les verdicts de Core.</summary>
 public static class Cards
 {
     public const int HeroCardWidth = 104;
     public const int HeroCardHeight = 100;
+    private const int PortraitBoxSize = 66;
 
-    /// <summary>Portrait 64×64 dans son cadre 72×72, avec sprite d'attente optionnel ailleurs.</summary>
+    /// <summary>Portrait 64×64 dans son cadre 72×72 (utilisé là où la place le permet : détail de mission).</summary>
     public static Control PortraitWithFrame(string heroId)
     {
         var holder = new Control { CustomMinimumSize = new Vector2(72, 72), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -24,13 +51,30 @@ public static class Cards
         return holder;
     }
 
+    /// <summary>Portrait compact 64×64 sur fond du cadre, liseré doré de 1 px (66×66) : gagne 6 px de haut par rapport au cadre ornemental.</summary>
+    private static Control PortraitCompact(string heroId)
+    {
+        var holder = new Panel { CustomMinimumSize = new Vector2(PortraitBoxSize, PortraitBoxSize), MouseFilter = Control.MouseFilterEnum.Ignore };
+        holder.AddThemeStyleboxOverride("panel", UiKit.Flat(new Color(0.16f, 0.20f, 0.34f), UiKit.Gold, 1, 0));
+        holder.AddChild(new TextureRect
+        {
+            Texture = UiKit.Tex($"portraits/{heroId}.png"), Position = new Vector2(1, 1), Size = new Vector2(64, 64),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        });
+        return holder;
+    }
+
+    /// <summary>
+    /// Carte de héros : portrait → nom (2 lignes au besoin, jamais tronqué) → spécialité/niveau ; énergie et coût en pastilles
+    /// sur les angles du portrait (le visage reste dégagé). États : sélectionné ✔, engagé ⚠, incompatible ✖ (icône + grisé).
+    /// </summary>
     public static CardButton HeroCard(GameSession session, Hero hero, CardState state, string? reason)
     {
         var d = hero.Definition;
         var card = new CardButton
         {
             CustomMinimumSize = new Vector2(HeroCardWidth, HeroCardHeight),
-            TooltipText = $"{d.Name} — {d.Role}\n{d.Skill} niveau {d.Level}, énergie {hero.Energy}, engagement {session.Money(d.BaseCostCopper)}\nTrait : {d.TraitText}" +
+            TooltipText = $"{d.Name} — {d.Role}\n{Names.Skill(d.Skill)} niveau {d.Level}, énergie {hero.Energy}, engagement {session.Money(d.BaseCostCopper)}\nTrait : {d.TraitText}" +
                           (hero.IsFree ? "" : "\nEn mission.") + (reason is null ? "" : $"\n{reason}"),
         };
         var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -39,66 +83,121 @@ public static class Cards
         box.OffsetLeft = 2; box.OffsetRight = -2; box.OffsetTop = 2; box.OffsetBottom = -2;
         card.AddChild(box);
 
-        var portrait = PortraitWithFrame(d.Id);
-        if (!hero.IsFree)
-        {
-            var badge = UiKit.Icon("warning");
-            badge.Position = new Vector2(54, 54);
-            portrait.AddChild(badge);
-            portrait.Modulate = new Color(0.75f, 0.75f, 0.85f);
-        }
+        var portrait = PortraitCompact(d.Id);
+        if (!hero.IsFree) portrait.Modulate = new Color(0.72f, 0.72f, 0.84f);
         var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         center.AddChild(portrait);
         box.AddChild(center);
 
-        // Coût (bas) et énergie (haut) en pastilles posées sur le portrait : la carte tient dans la grille 4×3.
-        portrait.AddChild(Chip(session.Money(d.BaseCostCopper), new Vector2(4, 72 - 4 - 10), 64));
-        portrait.AddChild(Chip($"E{hero.Energy}", new Vector2(4, 4), 0));
+        // Spécialité + niveau (haut-gauche, style titre) ; énergie et coût (bas) : pastilles à icône, hors du visage.
+        portrait.AddChild(Chip(Names.Skill(d.Skill).ToUpperInvariant() + " " + d.Level, null, new Vector2(1, 1), title: true));
+        var bottom = new HBoxContainer { Position = new Vector2(1, PortraitBoxSize - 17), Size = new Vector2(PortraitBoxSize - 2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bottom.AddChild(Chip($"{hero.Energy}", "energy", Vector2.Zero, title: false));
+        bottom.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
+        bottom.AddChild(Chip($"{d.BaseCostCopper}", "coin", Vector2.Zero, title: false));
+        portrait.AddChild(bottom);
 
-        foreach (var text in new[] { d.Name, $"{d.Skill} {d.Level}" })
-        {
-            var label = card.Track(UiKit.Lbl(text, clip: true));
-            label.HorizontalAlignment = HorizontalAlignment.Center;
-            label.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 8);
-            box.AddChild(label);
-        }
-        card.SetState(state);
+        // Nom : deux lignes réservées pour une grille stable ; WordSmart coupe aux espaces, aucune ellipse.
+        var name = card.Track(UiKit.Lbl(d.Name, wrap: true));
+        name.HorizontalAlignment = HorizontalAlignment.Center;
+        name.VerticalAlignment = VerticalAlignment.Top;
+        name.MaxLinesVisible = 2;
+        name.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 2 * UiKit.BodySize);
+        box.AddChild(name);
+
+        var marker = state == CardState.Selected ? "success" : !hero.IsFree ? "warning" : reason is not null ? "failure" : null;
+        card.SetState(state, marker);
         return card;
     }
 
-    private static Control Chip(string text, Vector2 position, int width)
+    /// <summary>Pastille posée sur un portrait : icône optionnelle + valeur ; style titre pour les mentions en capitales.</summary>
+    private static Control Chip(string text, string? icon, Vector2 position, bool title)
     {
         var chip = new PanelContainer { Position = position, MouseFilter = Control.MouseFilterEnum.Ignore };
-        var style = new StyleBoxFlat { BgColor = new Color(UiKit.Ink, 0.85f) };
-        style.SetContentMarginAll(1);
-        chip.AddThemeStyleboxOverride("panel", style);
+        chip.AddThemeStyleboxOverride("panel", UiKit.Flat(new Color(UiKit.Ink, 0.88f), null, 0, 1));
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 0);
+        if (icon is not null) row.AddChild(UiKit.Icon(icon));
         var label = UiKit.Lbl(text, UiKit.Cream);
-        label.HorizontalAlignment = HorizontalAlignment.Center;
-        chip.AddChild(label);
-        if (width > 0) chip.CustomMinimumSize = new Vector2(width, 0);
+        if (title) UiKit.AsTitle(label);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(label);
+        chip.AddChild(row);
         return chip;
     }
 
+    /// <summary>
+    /// Offre du tableau : pastille de catégorie (texte + couleur) et titre ; compétence requise, énergie, prime ; description sur
+    /// deux lignes au plus (texte complet en infobulle et dans le panneau d'affectation).
+    /// </summary>
     public static CardButton OfferRow(GameSession session, QuestOffer offer, CardState state, int width, int height)
     {
         var t = offer.Template;
-        var card = new CardButton { CustomMinimumSize = new Vector2(width, height), TooltipText = $"{t.Title}\n{t.Description}" };
+        var accepted = offer.State == OfferState.Accepted;
+        var card = new CardButton
+        {
+            CustomMinimumSize = new Vector2(width, height),
+            TooltipText = $"{t.Title} — {Names.Category(t.Category)}\n{t.Description}\n{Names.Skill(t.Skill)} niveau {t.MinLevel} requis · énergie {t.EnergyCost} · prime {session.Money(t.RewardCopper)}" +
+                          (accepted ? "\nDéjà acceptée." : ""),
+        };
         var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         box.AddThemeConstantOverride("separation", 1);
         box.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        box.OffsetLeft = 8; box.OffsetRight = -8; box.OffsetTop = 7; box.OffsetBottom = -5;
+        box.OffsetLeft = 7; box.OffsetRight = -22; box.OffsetTop = 5; box.OffsetBottom = -4;
         card.AddChild(box);
 
-        var head = card.Track(UiKit.Lbl($"{t.Title}" + (offer.State == OfferState.Accepted ? "  (ACCEPTÉE)" : ""), clip: true));
+        // Ligne 1 : [CATÉGORIE] titre
+        var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        head.AddThemeConstantOverride("separation", 4);
+        head.AddChild(CategoryBadge(t.Category));
+        var title = card.Track(UiKit.Lbl(t.Title, clip: true));
+        title.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        title.VerticalAlignment = VerticalAlignment.Center;
+        head.AddChild(title);
+        if (accepted) head.AddChild(CategoryBadge(null, "Acceptée"));
         box.AddChild(head);
-        var stats = card.Track(UiKit.Lbl($"{t.Category} · {t.Skill} niv.{t.MinLevel} · énergie {t.EnergyCost} · prime {session.Money(t.RewardCopper)}", clip: true));
+
+        // Ligne 2 : compétence · niveau  |  énergie  | prime
+        var stats = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        stats.AddThemeConstantOverride("separation", 6);
+        var need = card.Track(UiKit.Lbl($"{Names.Skill(t.Skill)} · niv. {t.MinLevel}"));
+        need.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        stats.AddChild(need);
+        stats.AddChild(StatCell(card, "energy", $"{t.EnergyCost}"));
+        stats.AddChild(StatCell(card, "coin", session.Money(t.RewardCopper)));
         box.AddChild(stats);
+
+        // Lignes 3-4 : description (deux lignes maximum)
         var desc = card.Track(UiKit.Lbl(t.Description, wrap: true));
-        desc.MaxLinesVisible = 3;
+        desc.MaxLinesVisible = 2;
         desc.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         desc.ClipText = true;
         box.AddChild(desc);
-        card.SetState(state);
+
+        card.SetState(state, accepted ? "success" : null);
         return card;
+    }
+
+    private static Control StatCell(CardButton card, string icon, string text)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 1);
+        row.AddChild(UiKit.Icon(icon));
+        var label = card.Track(UiKit.Lbl(text));
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(label);
+        return row;
+    }
+
+    /// <summary>Pastille texte : catégorie (couleur propre) ou mention neutre (« Acceptée »).</summary>
+    public static Control CategoryBadge(QuestCategory? category, string? text = null)
+    {
+        var fill = category is { } c ? Names.CategoryColor(c) : new Color(0.20f, 0.26f, 0.20f);
+        var chip = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        chip.AddThemeStyleboxOverride("panel", UiKit.Flat(fill, new Color(UiKit.Ink, 0.9f), 1, 1));
+        var label = UiKit.AsTitle(UiKit.Lbl(text ?? Names.Category(category!.Value).ToUpperInvariant(), UiKit.Cream));
+        chip.AddChild(label);
+        chip.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        return chip;
     }
 }

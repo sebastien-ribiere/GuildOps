@@ -19,7 +19,7 @@ public partial class DayReport : PanelBase
 
         var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.2f };
         root.AddChild(left);
-        left.AddChild(UiKit.Lbl("JOURNAL DE LA GUILDE", UiKit.Gold));
+        left.AddChild(UiKit.Title("JOURNAL DE LA GUILDE"));
         var panel = UiKit.Panel("dark", 6);
         panel.SizeFlagsVertical = SizeFlags.ExpandFill;
         left.AddChild(panel);

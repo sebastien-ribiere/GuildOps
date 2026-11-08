@@ -20,7 +20,7 @@ public partial class ComplaintDialog : PanelBase
 
         var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1 };
         root.AddChild(left);
-        left.AddChild(UiKit.Lbl("RÉCLAMATIONS CLIENTS", UiKit.Gold));
+        left.AddChild(UiKit.Title("RÉCLAMATIONS CLIENTS"));
         var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         left.AddChild(scroll);
         _list = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };

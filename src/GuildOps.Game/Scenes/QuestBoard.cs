@@ -20,7 +20,7 @@ public partial class QuestBoard : PanelBase
 
         var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 2 };
         root.AddChild(left);
-        left.AddChild(UiKit.Lbl("TABLEAU DES CONTRATS", UiKit.Gold));
+        left.AddChild(UiKit.Title("TABLEAU DES CONTRATS"));
         _rows = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         _rows.AddThemeConstantOverride("separation", 3);
         left.AddChild(_rows);
