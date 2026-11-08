@@ -182,12 +182,23 @@ public partial class AssignmentPanel : PanelBase
         var t = offer.Template;
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 4);
-        head.AddChild(Cards.CategoryBadge(t.Category));
+        head.AddChild(Cards.CategoryHeader(t.Category));
         var title = UiKit.AsTitle(UiKit.Lbl(t.Title, UiKit.Gold, wrap: true));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         _body.AddChild(head);
-        _body.AddChild(UiKit.Lbl($"{Names.Skill(t.Skill)} niv. {t.MinLevel} · énergie {t.EnergyCost} · prime {s.Money(t.RewardCopper)}", UiKit.Cream, wrap: true));
+
+        // Miniature 96×64 (le panneau fait ~190 px : l'illustration HD s'ouvre en grand par un clic ou Entrée) à côté des caractéristiques.
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 4);
+        row.AddChild(Cards.IllustrationButton(Shell, t, hdHalf: false));
+        var facts = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        facts.AddThemeConstantOverride("separation", 1);
+        facts.AddChild(Cards.SkillLine(t.Skill, UiKit.Cream));
+        facts.AddChild(Cards.LevelMarker(t.MinLevel, UiKit.Cream, caption: false));
+        facts.AddChild(UiKit.Lbl($"niv. {t.MinLevel} min. · énergie {t.EnergyCost} · prime {s.Money(t.RewardCopper)}", UiKit.Cream, wrap: true));
+        row.AddChild(facts);
+        _body.AddChild(row);
         _body.AddChild(UiKit.Lbl(t.Description, UiKit.Muted, wrap: true));
     }
 

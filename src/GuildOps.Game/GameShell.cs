@@ -32,6 +32,14 @@ public partial class GameShell : Control
 
     public event Action? Changed;
 
+    /// <summary>
+    /// Levé UNE fois par résolution effective acceptée par Core (jamais par un rafraîchissement ni une navigation), après mise à jour des
+    /// vues. Sert uniquement aux effets cosmétiques : les abonnés ne doivent ni muter la session ni tirer.
+    /// </summary>
+    public event Action<MissionOutcome>? MissionResolved;
+
+    private IllustrationViewer _viewer = null!;
+
     private readonly Dictionary<View, PanelBase> _panels = [];
     private Label _toast = null!;
     private HBoxContainer _hud = null!;
@@ -71,6 +79,8 @@ public partial class GameShell : Control
 
         BuildHud();
         BuildToast();
+        _viewer = new IllustrationViewer();
+        AddChild(_viewer);
         Show(View.Hall);
         Notify($"Bienvenue à la guilde. Jour 1 : {Session.CurrentOffers.Count} contrats vous attendent.");
         GD.Print($"GuildOps prêt : {Session.Heroes.Count} aventuriers, {Session.Offers.Count} offres, graine {Session.Seed}.");
@@ -166,8 +176,14 @@ public partial class GameShell : Control
 
     // ---- Navigation ------------------------------------------------------------------------------------------
 
+    /// <summary>Ouvre l'illustration HD d'un contrat (affichage seul).</summary>
+    public void OpenIllustration(QuestTemplate template) => _viewer.Open(template);
+    public bool IllustrationOpen => _viewer.IsOpen;
+    public void CloseIllustration() => _viewer.Close();
+
     public void Show(View view)
     {
+        _viewer.Close();
         Current = view;
         foreach (var (v, panel) in _panels) panel.Visible = v == view;
         _homeButton.Visible = view != View.Hall;
@@ -237,6 +253,7 @@ public partial class GameShell : Control
         Notify($"{(o.Success ? "SUCCÈS" : "ÉCHEC")} — tirage {o.Roll} pour {o.ChancePercent} %. Réputation {o.ReputationBefore} -> {o.ReputationAfter}." +
                (o.Incident is null ? "" : " Incident : une réclamation est ouverte."), o.Success);
         RefreshAll();
+        MissionResolved?.Invoke(o);
     }
 
     public void ResolveComplaint(ComplaintChoice choice)

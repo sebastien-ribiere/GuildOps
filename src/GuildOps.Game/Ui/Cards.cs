@@ -214,6 +214,80 @@ public static class Cards
         => UiKit.Pill(text ?? Names.Category(category!.Value),
             category is { } c ? Names.CategoryColor(c) : new Color(0.20f, 0.26f, 0.20f));
 
+    /// <summary>Emblème de catégorie 24×24 suivi de la pastille texte : l'emblème ne remplace jamais le nom.</summary>
+    public static Control CategoryHeader(QuestCategory category)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        row.AddThemeConstantOverride("separation", 2);
+        var emblem = Art.Picture(Art.Category(category), new Vector2(24, 24));
+        emblem.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        row.AddChild(emblem);
+        var pill = CategoryBadge(category);
+        row.AddChild(pill);
+        return row;
+    }
+
+    /// <summary>Icône de compétence 16×16 + nom écrit.</summary>
+    public static Control SkillLine(Skill skill, Color color)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 2);
+        var icon = Art.Picture(Art.Skill(skill), new Vector2(16, 16));
+        icon.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        row.AddChild(icon);
+        var label = UiKit.Lbl(Names.Skill(skill), color);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.AddChild(label);
+        return row;
+    }
+
+    /// <summary>
+    /// Marqueur du niveau MINIMAL requis (1-4). Jamais une difficulté ni une probabilité : le niveau reste écrit en texte.
+    /// <paramref name="caption"/> : légende « niv. N min. » à côté du marqueur (omise dans les colonnes étroites, où le texte voisin porte le niveau).
+    /// </summary>
+    public static Control LevelMarker(int minLevel, Color color, bool caption = true)
+    {
+        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Pass, TooltipText = $"Niveau minimal requis : {minLevel}. Ce marqueur n'indique ni la difficulté ni la chance de réussite." };
+        row.AddThemeConstantOverride("separation", 3);
+        var marker = Art.Picture(Art.RequiredLevel(minLevel), new Vector2(40, 12));
+        marker.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        row.AddChild(marker);
+        if (caption)
+        {
+            var label = UiKit.Lbl($"niv. {minLevel} min.", color);
+            label.VerticalAlignment = VerticalAlignment.Center;
+            row.AddChild(label);
+        }
+        return row;
+    }
+
+    /// <summary>
+    /// Illustration de contrat cliquable (souris ou clavier) qui ouvre la visionneuse HD. L'image garde son ratio 3:2 ; le texte et le cadre
+    /// restent des contrôles Godot, l'image n'est qu'un décor. <paramref name="hdHalf"/> : illustration HD réduite ×½ (sinon miniature 96×64).
+    /// </summary>
+    public static Button IllustrationButton(GameShell shell, QuestTemplate t, bool hdHalf)
+    {
+        var size = hdHalf ? new Vector2(Art.HdW / 2, Art.HdH / 2) : new Vector2(Art.ThumbW, Art.ThumbH);
+        var button = new Button
+        {
+            Flat = true, CustomMinimumSize = size + new Vector2(4, 4), FocusMode = Control.FocusModeEnum.All,
+            TooltipText = $"{t.Title} — illustration. Entrée ou clic : agrandir.",
+            SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin,
+        };
+        var empty = new StyleBoxEmpty();
+        foreach (var n in new[] { "normal", "disabled", "hover", "pressed", "hover_pressed" }) button.AddThemeStyleboxOverride(n, empty);
+        button.AddThemeStyleboxOverride("focus", UiKit.FocusBox());
+        var frame = new Panel { MouseFilter = Control.MouseFilterEnum.Ignore, Position = Vector2.Zero, Size = size + new Vector2(4, 4) };
+        frame.AddThemeStyleboxOverride("panel", UiKit.Flat(UiKit.Ink, UiKit.Gold, 1, 0));
+        button.AddChild(frame);
+        var picture = Art.Picture(hdHalf ? Art.HdHalf(t.Id) : Art.Thumb(t.Id), size);
+        picture.Position = new Vector2(2, 2);
+        button.AddChild(picture);
+        var template = t;
+        button.Pressed += () => shell.OpenIllustration(template);
+        return button;
+    }
+
     /// <summary>Ligne de liste compacte (missions, réclamations) : titre puis sous-titre, hauteur fixe qui contient les deux lignes.</summary>
     public static CardButton ListRow(string title, string subtitle, CardState state, string? marker, int height = 36)
     {
