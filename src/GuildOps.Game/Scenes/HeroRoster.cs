@@ -14,7 +14,7 @@ public partial class HeroRoster : PanelBase
     {
         var root = new HBoxContainer();
         root.SetAnchorsPreset(LayoutPreset.FullRect);
-        root.OffsetLeft = 6; root.OffsetRight = -6; root.OffsetTop = 4; root.OffsetBottom = -4;
+        root.OffsetLeft = 6; root.OffsetRight = -6; root.OffsetTop = 1; root.OffsetBottom = -1; // 3 × 102 + 2 × 2 = 310 px
         AddChild(root);
 
         var left = new VBoxContainer();

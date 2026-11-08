@@ -52,6 +52,10 @@ public partial class GameShell : Control
         var data = GameDataLoader.LoadEmbedded();
         Session = GameSession.Start(data, data.Rules.TestSeed);
 
+        var backdrop = new ColorRect { Name = "Backdrop", Color = UiKit.Backdrop, MouseFilter = MouseFilterEnum.Ignore };
+        backdrop.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(backdrop);
+
         var content = new Control { Name = "Content" };
         content.SetAnchorsPreset(LayoutPreset.FullRect);
         content.OffsetTop = HudHeight;
@@ -138,8 +142,8 @@ public partial class GameShell : Control
     {
         _toastText = text;
         _toastOk = ok;
-        _toast.Text = text.ReplaceLineEndings(" ");
-        _toast.TooltipText = text;
+        _toast.Text = UiKit.Plain(text).ReplaceLineEndings(" ");
+        _toast.TooltipText = UiKit.Plain(text);
         _toast.AddThemeColorOverride("font_color", ok ? UiKit.Cream : UiKit.BadOnDark);
     }
 
@@ -230,7 +234,7 @@ public partial class GameShell : Control
         var o = result.Value!;
         Outcomes[o.QuestId] = o;
         if (o.Incident is { } incident) SelectedComplaintId = incident.ComplaintId;
-        Notify($"{(o.Success ? "SUCCÈS" : "ÉCHEC")} — tirage {o.Roll} pour {o.ChancePercent} %. Réputation {o.ReputationBefore} → {o.ReputationAfter}." +
+        Notify($"{(o.Success ? "SUCCÈS" : "ÉCHEC")} — tirage {o.Roll} pour {o.ChancePercent} %. Réputation {o.ReputationBefore} -> {o.ReputationAfter}." +
                (o.Incident is null ? "" : " Incident : une réclamation est ouverte."), o.Success);
         RefreshAll();
     }
@@ -243,7 +247,7 @@ public partial class GameShell : Control
         {
             LastComplaintOutcome = result.Value;
             var v = result.Value!;
-            Notify($"{v.Message} Réputation {v.ReputationBefore} → {v.ReputationAfter}.");
+            Notify($"{v.Message} Réputation {v.ReputationBefore} -> {v.ReputationAfter}.");
         }
         else Notify("Refusé : " + result.Message, false);
         RefreshAll();
@@ -255,7 +259,7 @@ public partial class GameShell : Control
         if (!result.Ok) { Notify("Refusé : " + result.Message, false); RefreshAll(); return; }
         SelectedOfferId = null;
         var v = result.Value!;
-        Notify($"Tableau renouvelé. Réputation {v.ReputationBefore} → {v.ReputationAfter}. Ce droit ne sert qu'une fois par partie.");
+        Notify($"Tableau renouvelé. Réputation {v.ReputationBefore} -> {v.ReputationAfter}. Ce droit ne sert qu'une fois par partie.");
         RefreshAll();
     }
 

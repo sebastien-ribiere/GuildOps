@@ -34,7 +34,7 @@ public static class Names
 public static class Cards
 {
     public const int HeroCardWidth = 104;
-    public const int HeroCardHeight = 100;
+    public const int HeroCardHeight = 102;
     private const int PortraitBoxSize = 66;
 
     /// <summary>Portrait 64×64 dans son cadre 72×72 (utilisé là où la place le permet : détail de mission).</summary>
@@ -102,10 +102,12 @@ public static class Cards
         name.HorizontalAlignment = HorizontalAlignment.Center;
         name.VerticalAlignment = VerticalAlignment.Top;
         name.MaxLinesVisible = 2;
+        name.AddThemeConstantOverride("line_spacing", -2); // deux lignes de 15 px : le nom entier tient sous le portrait
         name.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 2 * UiKit.BodySize);
         box.AddChild(name);
 
-        var marker = state == CardState.Selected ? "success" : !hero.IsFree ? "warning" : reason is not null ? "failure" : null;
+        // Engagé ⚠ > incompatible ✖ (verdict de Core) > choisi ✔ : un héros choisi mais incompatible garde son ✖.
+        var marker = !hero.IsFree ? "warning" : reason is not null ? "failure" : state == CardState.Selected ? "success" : null;
         card.SetState(state, marker);
         return card;
     }
@@ -191,13 +193,23 @@ public static class Cards
 
     /// <summary>Pastille texte : catégorie (couleur propre) ou mention neutre (« Acceptée »).</summary>
     public static Control CategoryBadge(QuestCategory? category, string? text = null)
+        => UiKit.Pill(text ?? Names.Category(category!.Value).ToUpperInvariant(),
+            category is { } c ? Names.CategoryColor(c) : new Color(0.20f, 0.26f, 0.20f));
+
+    /// <summary>Ligne de liste compacte (missions, réclamations) : titre puis sous-titre, hauteur fixe qui contient les deux lignes.</summary>
+    public static CardButton ListRow(string title, string subtitle, CardState state, string? marker, int height = 36)
     {
-        var fill = category is { } c ? Names.CategoryColor(c) : new Color(0.20f, 0.26f, 0.20f);
-        var chip = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        chip.AddThemeStyleboxOverride("panel", UiKit.Flat(fill, new Color(UiKit.Ink, 0.9f), 1, 1));
-        var label = UiKit.AsTitle(UiKit.Lbl(text ?? Names.Category(category!.Value).ToUpperInvariant(), UiKit.Cream));
-        chip.AddChild(label);
-        chip.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
-        return chip;
+        var card = new CardButton { CustomMinimumSize = new Vector2(0, height), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        var box = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        box.AddThemeConstantOverride("separation", 0);
+        box.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        box.OffsetLeft = 6; box.OffsetRight = -22; box.OffsetTop = 2; box.OffsetBottom = -2;
+        card.AddChild(box);
+        box.AddChild(card.Track(UiKit.Lbl(title, clip: true)));
+        var sub = card.Track(UiKit.Lbl(subtitle, clip: true));
+        box.AddChild(sub);
+        card.TooltipText = $"{title}\n{subtitle}";
+        card.SetState(state, marker);
+        return card;
     }
 }

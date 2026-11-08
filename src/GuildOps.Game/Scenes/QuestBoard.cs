@@ -59,7 +59,7 @@ public partial class QuestBoard : PanelBase
         _regen.Disabled = s.RegenerationCheck().Count > 0;
         _regen.Text = s.RegenerationUsed
             ? "Renouveler le tableau (déjà utilisé)"
-            : $"Renouveler (−{s.Data.Rules.RegenerationReputationCost} réputation, 1 fois par partie)";
+            : $"Renouveler (-{s.Data.Rules.RegenerationReputationCost} réputation, 1 fois par partie)";
         _assignment.Refresh();
     }
 }

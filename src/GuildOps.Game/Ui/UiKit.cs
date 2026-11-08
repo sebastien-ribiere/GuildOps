@@ -87,10 +87,11 @@ public static class UiKit
         Theme = theme;
     }
 
-    public static StyleBoxTexture Nine(string relativePath, int texMargin, int content, Color? modulate = null)
+    public static StyleBoxTexture Nine(string relativePath, int texMargin, int content, Color? modulate = null, int? bottomMargin = null)
     {
         var box = new StyleBoxTexture { Texture = Tex(relativePath) };
         box.SetTextureMarginAll(texMargin);
+        if (bottomMargin is { } bottom) box.TextureMarginBottom = bottom;
         box.SetContentMarginAll(content);
         if (modulate is { } m) box.ModulateColor = m;
         return box;
@@ -159,22 +160,66 @@ public static class UiKit
         MouseFilter = Control.MouseFilterEnum.Ignore,
     };
 
-    public static HBoxContainer IconText(string icon, string text, Color? color = null)
+    /// <summary>Icône 16 px + texte. Avec <paramref name="wrap"/>, le texte passe à la ligne sous l'icône alignée en haut.</summary>
+    public static HBoxContainer IconText(string icon, string text, Color? color = null, bool wrap = false)
     {
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 1);
-        row.AddChild(Icon(icon));
-        var label = Lbl(text, color);
-        label.VerticalAlignment = VerticalAlignment.Center;
+        var glyph = Icon(icon);
+        if (wrap) glyph.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+        row.AddChild(glyph);
+        var label = Lbl(text, color, wrap: wrap);
+        if (wrap) label.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        else label.VerticalAlignment = VerticalAlignment.Center;
         row.AddChild(label);
         return row;
     }
 
+    /// <summary>Panneau 9-slice du kit. Les PNG portent une ligne décorative en bas de la zone centrale (rangée 39) : elle est rattachée
+    /// à la bordure basse (marge de 9 px) pour ne pas être étirée en bande épaisse sur les grands panneaux.</summary>
     public static PanelContainer Panel(string kind, int content = 6)
     {
         var panel = new PanelContainer();
-        panel.AddThemeStyleboxOverride("panel", Nine($"ui/panel_{kind}_9slice.png", 8, content));
+        panel.AddThemeStyleboxOverride("panel", Nine($"ui/panel_{kind}_9slice.png", 8, content, bottomMargin: 9));
         return panel;
+    }
+
+    /// <summary>Fond uni des vues (sinon le gris par défaut du moteur transparaît entre les panneaux).</summary>
+    public static readonly Color Backdrop = new(0.11f, 0.08f, 0.18f);
+
+    /// <summary>Pastille de texte (catégorie, étape, état) : fond plein, liseré d'encre, texte au style « titre ».</summary>
+    public static Control Pill(string text, Color fill, Color? textColor = null, Color? border = null)
+    {
+        var chip = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        chip.AddThemeStyleboxOverride("panel", Flat(fill, border ?? new Color(Ink, 0.9f), 1, 1));
+        chip.AddChild(AsTitle(Lbl(text, textColor ?? Cream)));
+        return chip;
+    }
+
+    /// <summary>Filet horizontal de 1 px.</summary>
+    public static ColorRect Divider(Color color) => new()
+    {
+        Color = color, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore,
+    };
+
+    /// <summary>Zone défilante verticale uniquement (le texte passe à la ligne ; le clavier fait défiler quand un contrôle reçoit le focus).</summary>
+    public static ScrollContainer Scroll() => new()
+    {
+        HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        SizeFlagsVertical = Control.SizeFlags.ExpandFill, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+    };
+
+    /// <summary>Barre de proportion purement graphique (0–100) : n'exprime aucune règle, seulement la valeur donnée par Core.</summary>
+    public static Control Bar(int percent, Color fill, Color back)
+    {
+        percent = Math.Clamp(percent, 0, 100);
+        var row = new HBoxContainer { CustomMinimumSize = new Vector2(0, 6), MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddThemeConstantOverride("separation", 0);
+        var done = new ColorRect { Color = fill, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsStretchRatio = Math.Max(percent, 0.001f), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var rest = new ColorRect { Color = back, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsStretchRatio = Math.Max(100 - percent, 0.001f), MouseFilter = Control.MouseFilterEnum.Ignore };
+        row.AddChild(done);
+        row.AddChild(rest);
+        return row;
     }
 
     public static Button Btn(string text, Action onPressed, float minWidth = 0)
@@ -198,6 +243,26 @@ public static class UiKit
         rich.AddThemeColorOverride("default_color", onLight ? Ink : Cream);
         return rich;
     }
+
+    /// <summary>Texte BBCode qui prend sa hauteur naturelle (à placer dans une zone défilante) : pas de barre de défilement propre.</summary>
+    public static RichTextLabel RichFit(bool onLight, string bbcode = "")
+    {
+        var rich = new RichTextLabel
+        {
+            BbcodeEnabled = true, FitContent = true, ScrollActive = false,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            Text = bbcode,
+        };
+        rich.AddThemeColorOverride("default_color", onLight ? Ink : Cream);
+        return rich;
+    }
+
+    /// <summary>
+    /// Texte venu de Core (journal, verdicts) : les flèches Unicode, absentes des deux polices pixel embarquées, sont rendues en ASCII
+    /// (« -> ») plutôt que de dépendre d'une police système de repli, variable d'un OS à l'autre. Affichage seulement.
+    /// </summary>
+    public static string Plain(string text) => text.Replace("→", "->").Replace("←", "<-");
 
     public static Color Good(bool onLight) => onLight ? GoodOnLight : GoodOnDark;
     public static Color Bad(bool onLight) => onLight ? BadOnLight : BadOnDark;
