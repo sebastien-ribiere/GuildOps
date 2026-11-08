@@ -6,8 +6,8 @@ namespace GuildOps.Game;
 
 /// <summary>
 /// Hall de la guilde : décor fourni + zones d'interaction qui sont des contrôles Godot séparés des pixels du décor (clic ou clavier).
-/// Chaque zone épouse un objet du décor (panneau de contrats, râtelier, table, porte, coffre) et porte une plaque de nom ancrée sur l'objet
-/// et une pastille d'état tirée de Core. Les douze sprites sont purement décoratifs, répartis en petits groupes : pas de déplacement libre,
+/// Chaque zone épouse un objet du décor (tableau de contrats, arche, bureau, tapis, coffre) et porte une plaque de nom ancrée sur l'objet
+/// et un compteur tiré de Core fusionné dans le même texte (« Contrats (4) »). Les douze sprites sont purement décoratifs, répartis en petits groupes : pas de déplacement libre,
 /// ni collision, ni pathfinding.
 /// </summary>
 public partial class GuildHall : PanelBase
@@ -27,7 +27,7 @@ public partial class GuildHall : PanelBase
     private readonly Dictionary<View, ZoneUi> _zones = [];
     private Control _sprites = null!;
 
-    private sealed record ZoneUi(Button Button, PanelContainer Plaque, Label PlaqueText, Label Badge, string Name);
+    private sealed record ZoneUi(Button Button, Label Text, string Name);
 
     protected override void Build()
     {
@@ -41,15 +41,16 @@ public partial class GuildHall : PanelBase
         _sprites = new Control { MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_sprites);
 
-        // Rectangles calés sur les objets du décor ; plaque au-dessus de l'objet quand il est petit, sur son cadre sinon.
-        Zone(View.Board, "Contrats", new Rect2(40, 105, 142, 117), plaqueAbove: false);
-        Zone(View.Roster, "Aventuriers", new Rect2(468, 105, 130, 124), plaqueAbove: false);
-        Zone(View.Missions, "Missions", new Rect2(382, 214, 72, 34), plaqueAbove: true);
-        Zone(View.Complaints, "Réclamations", new Rect2(284, 266, 78, 70), plaqueAbove: false);
-        Zone(View.Report, "Trésorerie", new Rect2(507, 254, 96, 68), plaqueAbove: true);
+        // Rectangles calés sur les objets du décor ; l'étiquette (nom + compteur en un seul texte) est posée sur l'objet lui-même :
+        // (ancre horizontale 0..1, ancre verticale 0..1, décalage y) relatifs au rectangle de la zone.
+        Zone(View.Board, "Contrats", new Rect2(70, 120, 82, 76), 0.5f, 0f, 3);          // tableau de liège, étiquette sur le cadre haut
+        Zone(View.Roster, "Aventuriers", new Rect2(522, 115, 108, 108), 0.5f, 1f, -6);    // grande arche d'où partent les aventuriers
+        Zone(View.Missions, "Missions", new Rect2(232, 176, 176, 46), 0.5f, 1f, -3);      // bureau du maître de guilde, bord avant
+        Zone(View.Complaints, "Réclamations", new Rect2(200, 243, 240, 58), 0.5f, 0.5f, 0); // tapis d'accueil devant le bureau
+        Zone(View.Report, "Trésorerie", new Rect2(452, 178, 52, 44), 0.5f, 1f, 11);        // coffre ouvert rempli d'or
     }
 
-    private void Zone(View target, string name, Rect2 rect, bool plaqueAbove)
+    private void Zone(View target, string name, Rect2 rect, float anchorX, float anchorY, int offsetY)
     {
         var button = new Button
         {
@@ -60,49 +61,43 @@ public partial class GuildHall : PanelBase
         var empty = new StyleBoxEmpty();
         foreach (var n in new[] { "normal", "disabled" }) button.AddThemeStyleboxOverride(n, empty);
         foreach (var n in new[] { "hover", "pressed", "hover_pressed" }) button.AddThemeStyleboxOverride(n, hover);
-        var focus = UiKit.FocusBox();
-        button.AddThemeStyleboxOverride("focus", focus);
+        button.AddThemeStyleboxOverride("focus", UiKit.FocusBox());
         button.Pressed += () => Shell.Show(target);
         AddChild(button);
 
-        // Plaque de nom : bois/parchemin du kit, centrée sur le bord haut de l'objet (ou juste au-dessus pour les petits objets).
+        // Une seule étiquette compacte par zone : « Nom (compteur) », police Tiny5, fond encre translucide.
         var plaque = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
         plaque.AddThemeStyleboxOverride("panel", PlaqueStyle(false));
-        var text = UiKit.Lbl(name, UiKit.Ink);
+        var text = UiKit.HallLbl(name, UiKit.Cream);
         plaque.AddChild(text);
-        plaque.AnchorLeft = plaque.AnchorRight = 0.5f;
-        plaque.AnchorTop = plaque.AnchorBottom = 0;
+        plaque.AnchorLeft = plaque.AnchorRight = anchorX;
+        plaque.AnchorTop = plaque.AnchorBottom = anchorY;
         plaque.OffsetLeft = plaque.OffsetRight = 0;
-        plaque.OffsetTop = plaqueAbove ? -4 : 4;
-        plaque.OffsetBottom = plaqueAbove ? -4 : 4;
+        plaque.OffsetTop = plaque.OffsetBottom = offsetY;
         plaque.GrowHorizontal = GrowDirection.Both;
-        plaque.GrowVertical = plaqueAbove ? GrowDirection.Begin : GrowDirection.End;
+        plaque.GrowVertical = anchorY >= 1f ? GrowDirection.Begin : anchorY > 0f ? GrowDirection.Both : GrowDirection.End;
         button.AddChild(plaque);
 
-        // Pastille d'état (coin bas-droit) : valeur dérivée de Core.
-        var badgePanel = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
-        badgePanel.AddThemeStyleboxOverride("panel", UiKit.Flat(new Color(UiKit.Ink, 0.92f), UiKit.Gold, 1, 2));
-        var badge = UiKit.Lbl("", UiKit.Cream);
-        badgePanel.AddChild(badge);
-        badgePanel.AnchorLeft = badgePanel.AnchorRight = 1;
-        badgePanel.AnchorTop = badgePanel.AnchorBottom = 1;
-        badgePanel.GrowHorizontal = GrowDirection.Begin;
-        badgePanel.GrowVertical = GrowDirection.Begin;
-        badgePanel.OffsetLeft = badgePanel.OffsetRight = -3;
-        badgePanel.OffsetTop = badgePanel.OffsetBottom = -3;
-        button.AddChild(badgePanel);
-
-        void Highlight(bool on) => plaque.AddThemeStyleboxOverride("panel", PlaqueStyle(on));
+        void Highlight(bool on)
+        {
+            plaque.AddThemeStyleboxOverride("panel", PlaqueStyle(on));
+            text.AddThemeColorOverride("font_color", on ? UiKit.Ink : UiKit.Cream);
+        }
         button.MouseEntered += () => Highlight(true);
         button.MouseExited += () => Highlight(button.HasFocus());
         button.FocusEntered += () => Highlight(true);
         button.FocusExited += () => Highlight(false);
 
-        _zones[target] = new ZoneUi(button, plaque, text, badge, name);
+        _zones[target] = new ZoneUi(button, text, name);
     }
 
     private static StyleBoxFlat PlaqueStyle(bool active)
-        => UiKit.Flat(active ? UiKit.Gold : CardButton.ParchmentFill, active ? UiKit.Ink : CardButton.ParchmentEdge, 2, 2);
+    {
+        var box = UiKit.Flat(active ? UiKit.Gold : new Color(UiKit.Ink, 0.88f), active ? UiKit.Ink : new Color(UiKit.Gold, 0.55f), 1, 0);
+        box.ContentMarginLeft = box.ContentMarginRight = 4;
+        box.ContentMarginTop = 1; box.ContentMarginBottom = 2;
+        return box;
+    }
 
     public override void FocusFirst()
     {
@@ -118,8 +113,7 @@ public partial class GuildHall : PanelBase
         void Set(View view, string badge, string tooltip)
         {
             var zone = _zones[view];
-            zone.Badge.Text = badge;
-            zone.Badge.GetParent<Control>().Visible = badge.Length > 0;
+            zone.Text.Text = badge.Length > 0 ? $"{zone.Name} ({badge})" : zone.Name;
             zone.Button.TooltipText = $"{zone.Name} — {tooltip}";
         }
         var available = s.CurrentOffers.Count(o => o.State == OfferState.Available);

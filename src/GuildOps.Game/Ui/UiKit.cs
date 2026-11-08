@@ -35,6 +35,9 @@ public static class UiKit
     public static Font Font { get; private set; } = null!;
     /// <summary>Style « corps » : Jersey 15 à 15 px (taille native = grille exacte), minuscules accentuées.</summary>
     public static Font BodyFont { get; private set; } = null!;
+    /// <summary>Style « décor » : Tiny5 (OFL), fin et net, pour les étiquettes posées sur le hall.</summary>
+    public static Font HallFont { get; private set; } = null!;
+    public const int HallSize = 10;
     public static Theme Theme { get; private set; } = null!;
 
     public static Texture2D Tex(string relativePath)
@@ -59,6 +62,7 @@ public static class UiKit
     {
         Font = PixelFont("Silkscreen-Regular.ttf");
         BodyFont = PixelFont("Jersey15-Regular.ttf");
+        HallFont = PixelFont("Tiny5-Regular.ttf");
 
         var theme = new Theme { DefaultFont = BodyFont, DefaultFontSize = BodySize };
         theme.SetColor("font_color", "Label", Cream);
@@ -129,7 +133,16 @@ public static class UiKit
 
     // ---- Fabriques -------------------------------------------------------------------------------------------
 
-    /// <summary>Texte « corps » (Jersey 10).</summary>
+    /// <summary>Étiquette du hall : Tiny5, sans ombre ni contour.</summary>
+    public static Label HallLbl(string text, Color color)
+    {
+        var label = Lbl(text, color);
+        label.AddThemeFontOverride("font", HallFont);
+        label.AddThemeFontSizeOverride("font_size", HallSize);
+        return label;
+    }
+
+    /// <summary>Texte « corps » (Jersey 15).</summary>
     public static Label Lbl(string text, Color? color = null, bool wrap = false, bool clip = false)
     {
         var label = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
