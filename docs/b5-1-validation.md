@@ -1,8 +1,8 @@
 # GuildOps — B5.1 : matrice de conformité et preuves de validation
 
 > Branche `feat/b5-1-ux-polish`, après synchronisation avec `main` (fusion de `origin/main`, qui contenait déjà la spécification via la PR #8).
-> Cadre : `docs/phase-b5-1-ux-polish.md` et `docs/phase-b5-visual-implementation.md`. **Aucune modification** de `src/GuildOps.Core/`, de `game-data/` ni des tests métier. Revue humaine requise : B5.1 n'est pas déclarée terminée par ce document.
-> Environnement des mesures : Linux x86_64, session X11 réelle (`DISPLAY=:1`), Godot 4.7.2 stable **mono** (rendu Compatibility), .NET SDK 10.0.114, le 8 novembre 2026.
+> Cadre : `docs/phase-b5-1-ux-polish.md` et `docs/phase-b5-visual-implementation.md`. **Aucune modification** de `src/GuildOps.Core/`, de `game-data/` ni des tests métier. Mesures refaites le 8 novembre 2026 sur le commit `87a1bcd` (Pixeloid Sans, cartes héros recomposées). Aucune anomalie bloquante ; clôture soumise à la revue et à la fusion humaines. Références figées : `docs/b5-1-reference.md`.
+> Environnement des mesures : Linux x86_64, session X11 réelle (`DISPLAY=:1`), Godot 4.7.2 stable **mono** (`Godot_v4.7.2-stable_mono_linux.x86_64`) (rendu Compatibility), .NET SDK 10.0.114, le 8 novembre 2026.
 
 ## 1. Matrice de conformité
 
@@ -12,8 +12,8 @@ Légende des preuves : **C** = contrôle automatique exécuté dans le Godot ré
 
 | Exigence | Implémentation existante | Preuve | Reste |
 |---|---|---|---|
-| Deux styles typographiques centraux (titre Silkscreen, corps lisible accentué) | `UiKit` : Silkscreen 8 px (titres, boutons, badges), Jersey 15 (OFL, `OFL-Jersey15.txt` fourni) comme défaut du thème (commit `c7584b4`) | S `apres/02`, `apres/04` ; C `LAYOUT_CHECK` : 0 glyphe manquant dans toutes les vues | — |
-| Aucun glyphe cassé | **Corrigé dans cette PR** : ni Jersey 15 ni Silkscreen ne contiennent `→ ←` (le contrôle de glyphes l'a révélé : ces flèches ne s'affichaient que par repli sur une police système). Remplacées par `->` / `<-` ; `UiKit.Plain` applique la même substitution aux textes venus de Core (journal, verdicts) | C `LAYOUT_CHECK … glyphes-manquants=0` (étendu aux `Button`) | Le texte brut de Core n'est pas modifié, seulement son affichage |
+| Une seule famille typographique, tailles verrouillées (`docs/b5-1-typography-decision.md`) | `UiKit` : **Pixeloid Sans 1.0** (Regular corps/journaux, Bold HUD/boutons/titres) en 9 px, 18 px pour le verdict SUCCÈS/ÉCHEC ; Jersey 15, Silkscreen et Tiny5 retirés (commit `fe8fd7d`). Licence OFL fournie (`OFL-PixeloidSans.txt`) | T `FontPolicyTests` (aucune référence aux anciennes polices, tailles 9/18, pas de repli système) ; S `apres/02`, `apres/04` ; C `LAYOUT_CHECK` : 0 glyphe manquant dans toutes les vues | — |
+| Aucun glyphe cassé | **Corrigé dans cette PR** : les polices utilisées avant la décision typographique (Jersey 15, Silkscreen) ne contenaient pas `→ ←` (le contrôle de glyphes l'a révélé : ces flèches ne s'affichaient que par repli sur une police système). Remplacées par `->` / `<-` ; `UiKit.Plain` applique la même substitution aux textes venus de Core (journal, verdicts) | C `LAYOUT_CHECK … glyphes-manquants=0` (étendu aux `Button`) | Le texte brut de Core n'est pas modifié, seulement son affichage |
 | Panneaux sans artefact | **Corrigé** : les PNG `panel_*_9slice` portent une ligne décorative en bas de la zone centrale ; étirée, elle formait une bande brune épaisse dans tous les grands panneaux (missions, réclamations, bilan, journal). Elle est rattachée à la bordure basse (marge de 9 px). Fond de vue uni (le gris par défaut du moteur apparaissait entre les panneaux) | S avant `avant/04`, `avant/05`, `avant/07` / après `apres/08`, `apres/12`, `apres/16` | — |
 | Focus / sélection visibles au-delà de la couleur | `CardButton` : cadre doré épais + coche ; `FocusBox` 2 px | S `apres/04b` ; C `KEYBOARD_FLOW_CHECK` | — |
 | HUD et toasts lisibles à 640 × 360, sans clipping sur valeurs longues | HUD inchangé ; la valeur la plus longue observée (`20 or 77 cuivres`) s'affiche en entier ; le toast tronque par ellipse les messages longs (texte complet en infobulle) | S `apres/16`, `apres/22` | Le HUD n'est pas dans le balayage automatique ; messages de toast longs tronqués (limite assumée) |
@@ -89,7 +89,7 @@ Légende des preuves : **C** = contrôle automatique exécuté dans le Godot ré
 
 ```text
 dotnet build GuildOps.sln --nologo                    -> 0 avertissement, 0 erreur (rc 0)
-dotnet test  GuildOps.sln --nologo                    -> Réussi : 154, échoué : 0, ignoré : 3, total : 157 (rc 0)
+dotnet test  GuildOps.sln --nologo                    -> Réussi : 160, échoué : 0, ignoré : 3, total : 163 (rc 0) — dont 6 `FontPolicyTests` ajoutés ; aucun test existant modifié
 tools/shots.sh <dossier> <godot-mono>                 -> dotnet build + godot --headless --import + scénario (rc 0)
 tools/run-autoplay.sh <dossier> <godot-mono> first-fit | greedy-repair | greedy-apologize | greedy-ignore | idle   (rc 0 chacun)
 godot --headless --path src/GuildOps.Game --export-release "Linux x64"    -> rc 0 (binaire de 74 Mo)
