@@ -163,9 +163,10 @@ public static class UiKit
         return label;
     }
 
-    public static TextureRect Icon(string name, float scale = 1f) => new()
+    /// <summary>Pictogramme 16×16 : <c>icons/</c> (kit B5) par défaut, ou un autre dossier (ex. <see cref="B53.Icons"/> pour le kit B5.3).</summary>
+    public static TextureRect Icon(string name, float scale = 1f, string folder = "icons") => new()
     {
-        Texture = Tex($"icons/{name}_16.png"),
+        Texture = Tex($"{folder}/{name}_16.png"),
         CustomMinimumSize = new Vector2(16 * scale, 16 * scale),
         StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -173,11 +174,11 @@ public static class UiKit
     };
 
     /// <summary>Icône 16 px + texte. Avec <paramref name="wrap"/>, le texte passe à la ligne sous l'icône alignée en haut.</summary>
-    public static HBoxContainer IconText(string icon, string text, Color? color = null, bool wrap = false)
+    public static HBoxContainer IconText(string icon, string text, Color? color = null, bool wrap = false, string folder = "icons")
     {
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 1);
-        var glyph = Icon(icon);
+        var glyph = Icon(icon, 1f, folder);
         if (wrap) glyph.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
         row.AddChild(glyph);
         var label = Lbl(text, color, wrap: wrap);

@@ -8,6 +8,9 @@ public static class B53
     public const string Root = "b5_3/";
     public const int TutorialPages = 4;
 
+    /// <summary>Dossier des 11 pictogrammes 16×16 du kit B5.3 (jouer, aide, réglages, crédits, quitter, retour, plein écran, animation réduite, trophée, clavier, info).</summary>
+    public const string Icons = Root + "icons";
+
     public static Texture2D Title => UiKit.Tex($"{Root}backgrounds/title_640x360.png");
     public static Texture2D Intro => UiKit.Tex($"{Root}scenes/intro_384x256.png");
     public static Texture2D Victory => UiKit.Tex($"{Root}scenes/victory_384x256.png");

@@ -44,6 +44,7 @@ public partial class GameShell : Control
     private TitleScreen _title = null!;
     private IntroScreen _intro = null!;
     private ConfirmDialog _confirm = null!;
+    private HelpScreen _help = null!;
     private readonly List<Overlay> _overlays = [];
     private int _pristineEvents;
 
@@ -60,7 +61,7 @@ public partial class GameShell : Control
     private bool _resetArmed;
     private double _resetTimer;
     private Label _dayLabel = null!, _moneyLabel = null!, _repLabel = null!, _missionsLabel = null!;
-    private Button _homeButton = null!, _menuButton = null!;
+    private Button _homeButton = null!, _menuButton = null!, _helpButton = null!;
     private bool _toastOk = true;
     private string _toastText = "";
 
@@ -124,6 +125,7 @@ public partial class GameShell : Control
     {
         _title = AddOverlay<TitleScreen>("TitleScreen");
         _intro = AddOverlay<IntroScreen>("IntroScreen");
+        _help = AddOverlay<HelpScreen>("HelpScreen");
         _confirm = AddOverlay<ConfirmDialog>("ConfirmDialog");
     }
 
@@ -134,6 +136,7 @@ public partial class GameShell : Control
     public TitleScreen Title => _title;
     public IntroScreen Intro => _intro;
     public ConfirmDialog Confirm => _confirm;
+    public HelpScreen Help => _help;
 
     public void PushOverlay(Overlay overlay) => _overlays.Add(overlay);
     public void PopOverlay(Overlay overlay) => _overlays.Remove(overlay);
@@ -147,6 +150,9 @@ public partial class GameShell : Control
     public bool HasProgress => Session.Status == GameStatus.Finished || Session.Guild.Day > 1 || Session.Events.Count != _pristineEvents;
 
     public void OpenTitle() => _title.Open();
+
+    /// <summary>Aide en quatre pages, consultable à tout moment (titre, HUD, F1). Ne modifie jamais la session.</summary>
+    public void OpenHelp() => _help.Open();
 
     /// <summary>« Reprendre » : retour à la partie en mémoire, dans la vue où on l'avait laissée. Aucune écriture dans Core.</summary>
     public void ResumeGame()
@@ -227,6 +233,9 @@ public partial class GameShell : Control
         _hud.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         _homeButton = UiKit.Btn("Hall", () => Show(View.Hall), 44, 18);
         _hud.AddChild(_homeButton);
+        _helpButton = UiKit.Btn("Aide", OpenHelp, 36, 18);
+        _helpButton.TooltipText = "Aide et règles (F1)";
+        _hud.AddChild(_helpButton);
         _menuButton = UiKit.Btn("Menu", OpenTitle, 44, 18);
         _menuButton.TooltipText = "Retour au titre (la partie reste en mémoire)";
         _hud.AddChild(_menuButton);
@@ -274,6 +283,12 @@ public partial class GameShell : Control
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F1 } && TopOverlay is not (HelpScreen or ConfirmDialog))
+        {
+            OpenHelp();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
         if (@event.IsActionPressed("ui_cancel") && Current != View.Hall && !AnyOverlayOpen)
         {
             Show(View.Hall);

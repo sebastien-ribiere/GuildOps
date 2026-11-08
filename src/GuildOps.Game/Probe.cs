@@ -1,4 +1,5 @@
 using Godot;
+using GuildOps.Core.Engine;
 
 namespace GuildOps.Game;
 
@@ -40,6 +41,11 @@ public sealed class Probe(GameShell shell, string? shotsDir)
         Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
         await Frame(1);
     }
+
+    /// <summary>Empreinte de tout ce que Core peut modifier : si elle ne bouge pas, aucune mutation n'a eu lieu.</summary>
+    public static string Snapshot(GameSession s)
+        => $"{s.Guild.Day}|{s.Guild.TreasuryCopper}|{s.Guild.Reputation}|{s.Guild.MissionsAcceptedToday}|{s.Guild.MissionsSucceeded}|{s.Events.Count}|{s.Quests.Count}|{s.Complaints.Count}|" +
+           string.Join(",", s.Quests.Select(q => $"{q.Id}:{q.State}")) + "|" + string.Join(",", s.Heroes.Select(h => $"{h.Id}:{h.Energy}"));
 
     public Control? Focused() => shell.GetViewport().GuiGetFocusOwner();
 

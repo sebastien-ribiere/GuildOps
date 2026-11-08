@@ -51,6 +51,7 @@ public abstract partial class Overlay : Control
         if (Visible) return;
         _returnFocus = GetViewport().GuiGetFocusOwner();
         OnOpening();
+        GetParent().MoveChild(this, -1);   // le dernier ouvert est dessiné au-dessus des autres
         Visible = true;
         Shell.PushOverlay(this);
         InitialFocus().GrabFocus();
