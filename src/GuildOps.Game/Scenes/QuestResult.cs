@@ -29,7 +29,7 @@ public partial class QuestResult : PanelBase
 
         var left = new VBoxContainer { CustomMinimumSize = new Vector2(212, 0) };
         root.AddChild(left);
-        _count = UiKit.Title("MISSIONS");
+        _count = UiKit.Title("Missions");
         left.AddChild(_count);
         var scroll = UiKit.Scroll();
         left.AddChild(scroll);
@@ -60,7 +60,7 @@ public partial class QuestResult : PanelBase
         var detailHadFocus = focused is not null && _detail.IsAncestorOf(focused);
         var toggleHadFocus = focused is not null && focused == _toggle;
 
-        _count.Text = s.Quests.Count == 0 ? "MISSIONS" : $"MISSIONS ({s.Quests.Count(q => q.State == QuestState.Assigned)} EN COURS / {s.Quests.Count})";
+        _count.Text = s.Quests.Count == 0 ? "Missions" : $"Missions ({s.Quests.Count(q => q.State == QuestState.Assigned)} en cours / {s.Quests.Count})";
         BuildList(s);
         BuildDetail(s);
 
@@ -107,7 +107,7 @@ public partial class QuestResult : PanelBase
 
         if (s.Quests.Count == 0)
         {
-            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("AUCUNE MISSION ENGAGÉE", UiKit.Ink)));
+            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("Aucune mission engagée", UiKit.Ink)));
             _detail.AddChild(UiKit.Lbl("Affectez un héros à un contrat : sa mission apparaîtra ici, prête à être résolue.", UiKit.Ink, wrap: true));
             _detail.AddChild(UiKit.Btn("Aller au tableau des contrats ->", () => Shell.Show(View.Board)));
             return;
@@ -115,7 +115,7 @@ public partial class QuestResult : PanelBase
         var selected = Shell.SelectedQuest;
         if (selected is null)
         {
-            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("AUCUNE MISSION CHOISIE", UiKit.Ink)));
+            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("Aucune mission choisie", UiKit.Ink)));
             _detail.AddChild(UiKit.Lbl("Sélectionnez une mission dans la liste pour la résoudre ou en lire le résultat.", UiKit.Ink, wrap: true));
             return;
         }
@@ -131,11 +131,11 @@ public partial class QuestResult : PanelBase
         var titleRow = new HBoxContainer();
         titleRow.AddThemeConstantOverride("separation", 4);
         titleRow.AddChild(Cards.CategoryBadge(t.Category));
-        var title = UiKit.Lbl(t.Title, UiKit.Ink, wrap: true);
+        var title = UiKit.AsTitle(UiKit.Lbl(t.Title, UiKit.Ink, wrap: true));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         titleRow.AddChild(title);
         info.AddChild(titleRow);
-        info.AddChild(UiKit.Lbl($"{h.Name} — {h.Role}", UiKit.Ink, wrap: true));
+        info.AddChild(UiKit.AsTitle(UiKit.Lbl($"{h.Name} — {h.Role}", UiKit.Ink, wrap: true)));
         var stats = new HBoxContainer();
         stats.AddThemeConstantOverride("separation", 8);
         stats.AddChild(UiKit.IconText("energy", $"{t.EnergyCost}", UiKit.Ink));
@@ -152,7 +152,7 @@ public partial class QuestResult : PanelBase
 
     private void BuildPending(GameSession s)
     {
-        _detail.AddChild(Banner("EN COURS", "scroll", new Color(0.60f, 0.38f, 0.04f), animate: false));
+        _detail.AddChild(Banner("En cours", "scroll", new Color(0.60f, 0.38f, 0.04f), animate: false, size: UiKit.TextSize));
         _detail.AddChild(UiKit.Lbl("Le héros est parti. Le tirage a lieu à la résolution : aucun résultat n'est connu d'avance.", UiKit.Ink, wrap: true));
         var button = UiKit.Btn("Résoudre la mission", Shell.Resolve);
         button.Disabled = s.Status == GameStatus.Finished;
@@ -183,7 +183,7 @@ public partial class QuestResult : PanelBase
             var box = new PanelContainer();
             box.AddThemeStyleboxOverride("panel", UiKit.Flat(new Color(0.96f, 0.80f, 0.70f), UiKit.BadOnLight, 2, 3));
             var inner = new VBoxContainer();
-            inner.AddChild(UiKit.IconText("warning", $"INCIDENT — {incident.Title}", UiKit.BadOnLight));
+            inner.AddChild(UiKit.IconText("warning", $"Incident — {incident.Title}", UiKit.BadOnLight));
             inner.AddChild(UiKit.Lbl($"{incident.Text} (dommage collatéral {incident.CollateralReputationDelta}).", UiKit.Ink, wrap: true));
             box.AddChild(inner);
             _detail.AddChild(box);
@@ -217,14 +217,14 @@ public partial class QuestResult : PanelBase
     }
 
     /// <summary>Bandeau de verdict : fond plein, icône et mot en grand. Animation purement cosmétique (opacité/échelle).</summary>
-    private Control Banner(string text, string icon, Color fill, bool animate)
+    private Control Banner(string text, string icon, Color fill, bool animate, int size = UiKit.VerdictSize)
     {
-        var banner = new PanelContainer { CustomMinimumSize = new Vector2(0, 30) };
+        var banner = new PanelContainer { CustomMinimumSize = new Vector2(0, size == UiKit.VerdictSize ? 30 : 20) };
         banner.AddThemeStyleboxOverride("panel", UiKit.Flat(fill, UiKit.Ink, 2, 3));
         var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         row.AddThemeConstantOverride("separation", 6);
         row.AddChild(UiKit.Icon(icon, 1.5f));
-        var label = UiKit.AsTitle(UiKit.Lbl(text, UiKit.Cream), 16);
+        var label = UiKit.AsTitle(UiKit.Lbl(text, UiKit.Cream), size);
         label.VerticalAlignment = VerticalAlignment.Center;
         row.AddChild(label);
         banner.AddChild(row);

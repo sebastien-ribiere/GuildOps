@@ -25,7 +25,7 @@ public partial class ComplaintDialog : PanelBase
 
         var left = new VBoxContainer { CustomMinimumSize = new Vector2(212, 0) };
         root.AddChild(left);
-        _count = UiKit.Title("RÉCLAMATIONS CLIENTS");
+        _count = UiKit.Title("Réclamations clients");
         left.AddChild(_count);
         var scroll = UiKit.Scroll();
         left.AddChild(scroll);
@@ -54,7 +54,7 @@ public partial class ComplaintDialog : PanelBase
         var keepIndex = focused is not null && focused.GetParent() == _list ? focused.GetIndex() : -1;
         var detailHadFocus = focused is not null && _detail.IsAncestorOf(focused);
 
-        _count.Text = s.Complaints.Count == 0 ? "RÉCLAMATIONS CLIENTS" : $"RÉCLAMATIONS ({s.OpenComplaints.Count} OUVERTE(S) / {s.Complaints.Count})";
+        _count.Text = s.Complaints.Count == 0 ? "Réclamations clients" : $"Réclamations ({s.OpenComplaints.Count} ouverte(s) / {s.Complaints.Count})";
         BuildList(s);
         BuildDetail(s);
 
@@ -88,14 +88,14 @@ public partial class ComplaintDialog : PanelBase
         UiKit.Clear(_detail);
         if (s.Complaints.Count == 0)
         {
-            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("AUCUNE RÉCLAMATION", UiKit.Ink)));
+            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("Aucune réclamation", UiKit.Ink)));
             _detail.AddChild(UiKit.Lbl("Les incidents survenus pendant les missions ouvrent un dossier ici. Aucun client mécontent pour le moment.", UiKit.Ink, wrap: true));
             return;
         }
         var complaint = Shell.SelectedComplaint;
         if (complaint is null)
         {
-            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("AUCUNE RÉCLAMATION CHOISIE", UiKit.Ink)));
+            _detail.AddChild(UiKit.AsTitle(UiKit.Lbl("Aucune réclamation choisie", UiKit.Ink)));
             _detail.AddChild(UiKit.Lbl("Sélectionnez un dossier dans la liste pour lire la plainte et choisir une réponse.", UiKit.Ink, wrap: true));
             return;
         }
@@ -112,7 +112,7 @@ public partial class ComplaintDialog : PanelBase
 
         var status = new HBoxContainer();
         status.AddThemeConstantOverride("separation", 4);
-        status.AddChild(UiKit.Pill(StateText(complaint.State).ToUpperInvariant(), open ? new Color(0.60f, 0.38f, 0.04f) : complaint.State == ComplaintState.Resolved ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f)));
+        status.AddChild(UiKit.Pill(StateText(complaint.State), open ? new Color(0.60f, 0.38f, 0.04f) : complaint.State == ComplaintState.Resolved ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f)));
         status.AddChild(UiKit.Lbl(open ? $"à traiter avant la fin du jour {complaint.ExpiresAfterDay}" : "dossier clos", UiKit.Ink));
         _detail.AddChild(status);
 

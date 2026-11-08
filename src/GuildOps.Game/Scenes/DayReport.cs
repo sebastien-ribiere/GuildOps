@@ -27,7 +27,7 @@ public partial class DayReport : PanelBase
 
         var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.15f };
         root.AddChild(left);
-        left.AddChild(UiKit.Title("JOURNAL DE LA GUILDE"));
+        left.AddChild(UiKit.Title("Journal de la guilde"));
         var panel = UiKit.Panel("dark", 6);
         panel.SizeFlagsVertical = SizeFlags.ExpandFill;
         left.AddChild(panel);
@@ -78,7 +78,7 @@ public partial class DayReport : PanelBase
             {
                 currentDay = e.Day;
                 if (sb.Length > 0) sb.Append('\n');
-                sb.Append("[color=#").Append(UiKit.Hex(UiKit.Gold)).Append("][b]JOUR ").Append(e.Day).Append("[/b][/color]\n");
+                sb.Append("[color=#").Append(UiKit.Hex(UiKit.Gold)).Append("][b]Jour ").Append(e.Day).Append("[/b][/color]\n");
             }
             sb.Append("[color=#").Append(UiKit.Hex(UiKit.Muted)).Append("]#").Append(e.Sequence).Append("[/color] ")
               .Append("[color=#").Append(UiKit.Hex(EventColor(e.Type))).Append(']').Append(UiKit.Plain(e.Message).Replace("[", "[lb]")).Append("[/color]\n");
@@ -107,14 +107,14 @@ public partial class DayReport : PanelBase
         var report = s.Report;
         UiKit.Clear(_side);
 
-        var heading = UiKit.AsTitle(UiKit.Lbl($"BILAN — JOUR {g.Day}/{rules.Days}", UiKit.Ink));
+        var heading = UiKit.AsTitle(UiKit.Lbl($"Bilan — jour {g.Day}/{rules.Days}", UiKit.Ink));
         heading.MouseFilter = MouseFilterEnum.Pass;
         heading.TooltipText = $"Graine de la partie : {s.Seed}";
         _side.AddChild(heading);
         if (report is { } r)
-            _side.AddChild(Banner(r.Success ? "REDRESSEMENT RÉUSSI" : "BILAN INACHEVÉ", r.Success ? "success" : "failure", r.Success ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f)));
+            _side.AddChild(Banner(r.Success ? "Redressement réussi" : "Bilan inachevé", r.Success ? "success" : "failure", r.Success ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f)));
         else if (g.Day >= rules.Days)
-            _side.AddChild(Banner("DERNIER JOUR — BILAN ROYAL", "warning", new Color(0.60f, 0.38f, 0.04f)));
+            _side.AddChild(Banner("Dernier jour — bilan royal", "warning", new Color(0.60f, 0.38f, 0.04f)));
 
         // Objectifs du bilan royal : valeur actuelle / objectif (Core). L'atteinte n'est affirmée qu'une fois le bilan rendu.
         if (report is null) _side.AddChild(UiKit.Lbl($"Objectifs du bilan royal (jour {rules.Days})", UiKit.MutedOnLight));

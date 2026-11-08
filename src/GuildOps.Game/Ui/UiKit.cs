@@ -3,11 +3,13 @@ using Godot;
 namespace GuildOps.Game.Ui;
 
 /// <summary>
-/// Thème 16 bits : deux styles typographiques centraux, 9-slices, boutons et fabriques de widgets. Aucune logique métier.
+/// Thème 16 bits : une seule famille, Pixeloid Sans 1.0 (GGBotNet, OFL), 9-slices, boutons et fabriques de widgets. Aucune logique métier.
 /// <list type="bullet">
-/// <item><b>Titre</b> — Silkscreen 8 px (capitales) : titres courts, boutons, badges. Fabriques <see cref="Title"/> / <see cref="AsTitle{T}"/>.</item>
-/// <item><b>Corps</b> — Jersey 15 (OFL) : descriptions, valeurs, journaux. C'est le défaut du thème : <see cref="Lbl"/>, <see cref="Rich"/>.</item>
+/// <item><b>Corps</b> — Regular 9 px : descriptions, journaux, dialogues, toasts. Défaut du thème : <see cref="Lbl"/>, <see cref="Rich"/>.</item>
+/// <item><b>Titre</b> — Bold 9 px : HUD, boutons, noms, stats, titres de panneaux, étiquettes du hall. Fabriques <see cref="Title"/> / <see cref="AsTitle{T}"/>.</item>
+/// <item><b>Verdict</b> — Bold 18 px (2 × 9) : uniquement les grands verdicts SUCCÈS / ÉCHEC.</item>
 /// </list>
+/// Seules ces tailles (9 et 18) sont autorisées ; un test statique le vérifie.
 /// </summary>
 public static class UiKit
 {
@@ -26,18 +28,19 @@ public static class UiKit
     /// <summary>Focus clavier : cadre vif de 2 px liseré d'encre, lisible sur parchemin clair comme sur panneau sombre.</summary>
     public static readonly Color FocusColor = new(1f, 0.87f, 0.2f);
 
-    public const int TitleSize = 8;
-    public const int BodySize = 15;
+    /// <summary>Grille native de Pixeloid Sans : taille unique du texte courant, des titres, des boutons et du HUD.</summary>
+    public const int TextSize = 9;
+    /// <summary>Multiple entier de la grille, réservé aux grands verdicts.</summary>
+    public const int VerdictSize = 18;
+    public const int TitleSize = TextSize;
+    public const int BodySize = TextSize;
 
     private static readonly Dictionary<string, Texture2D> Cache = [];
 
-    /// <summary>Style « titre » : Silkscreen 8 px.</summary>
+    /// <summary>Pixeloid Sans Bold : titres, boutons, HUD, noms, étiquettes du hall, verdicts.</summary>
     public static Font Font { get; private set; } = null!;
-    /// <summary>Style « corps » : Jersey 15 à 15 px (taille native = grille exacte), minuscules accentuées.</summary>
+    /// <summary>Pixeloid Sans Regular : corps de texte, journaux, descriptions.</summary>
     public static Font BodyFont { get; private set; } = null!;
-    /// <summary>Style « décor » : Tiny5 (OFL), fin et net, pour les étiquettes posées sur le hall.</summary>
-    public static Font HallFont { get; private set; } = null!;
-    public const int HallSize = 10;
     public static Theme Theme { get; private set; } = null!;
 
     public static Texture2D Tex(string relativePath)
@@ -55,29 +58,30 @@ public static class UiKit
         font.SubpixelPositioning = TextServer.SubpixelPositioning.Disabled;
         font.Hinting = TextServer.Hinting.None;
         font.GenerateMipmaps = false;
+        // Jamais de police système en repli silencieux : un glyphe absent doit se voir (et être détecté par le contrôle de glyphes).
+        font.AllowSystemFallback = false;
         return font;
     }
 
     public static void Init()
     {
-        Font = PixelFont("Silkscreen-Regular.ttf");
-        BodyFont = PixelFont("Jersey15-Regular.ttf");
-        HallFont = PixelFont("Tiny5-Regular.ttf");
+        Font = PixelFont("PixeloidSans-Bold.ttf");
+        BodyFont = PixelFont("PixeloidSans.ttf");
 
-        var theme = new Theme { DefaultFont = BodyFont, DefaultFontSize = BodySize };
+        var theme = new Theme { DefaultFont = BodyFont, DefaultFontSize = TextSize };
         theme.SetColor("font_color", "Label", Cream);
         theme.SetColor("default_color", "RichTextLabel", Cream);
         theme.SetFont("normal_font", "RichTextLabel", BodyFont);
-        theme.SetFontSize("normal_font_size", "RichTextLabel", BodySize);
+        theme.SetFontSize("normal_font_size", "RichTextLabel", TextSize);
         theme.SetFont("bold_font", "RichTextLabel", Font);
-        theme.SetFontSize("bold_font_size", "RichTextLabel", TitleSize);
+        theme.SetFontSize("bold_font_size", "RichTextLabel", TextSize);
         theme.SetConstant("separation", "VBoxContainer", 3);
         theme.SetConstant("separation", "HBoxContainer", 3);
         theme.SetConstant("line_spacing", "Label", 0);
         theme.SetConstant("line_separation", "RichTextLabel", 0);
 
         theme.SetFont("font", "Button", Font);
-        theme.SetFontSize("font_size", "Button", TitleSize);
+        theme.SetFontSize("font_size", "Button", TextSize);
         theme.SetStylebox("normal", "Button", ButtonBox("button_normal_128x32.png"));
         theme.SetStylebox("hover", "Button", ButtonBox("button_hover_128x32.png"));
         theme.SetStylebox("hover_pressed", "Button", ButtonBox("button_hover_128x32.png"));
@@ -133,16 +137,10 @@ public static class UiKit
 
     // ---- Fabriques -------------------------------------------------------------------------------------------
 
-    /// <summary>Étiquette du hall : Tiny5, sans ombre ni contour.</summary>
-    public static Label HallLbl(string text, Color color)
-    {
-        var label = Lbl(text, color);
-        label.AddThemeFontOverride("font", HallFont);
-        label.AddThemeFontSizeOverride("font_size", HallSize);
-        return label;
-    }
+    /// <summary>Étiquette du hall : Bold 9 px, sans ombre ni contour.</summary>
+    public static Label HallLbl(string text, Color color) => AsTitle(Lbl(text, color));
 
-    /// <summary>Texte « corps » (Jersey 15).</summary>
+    /// <summary>Texte « corps » (Regular 9 px).</summary>
     public static Label Lbl(string text, Color? color = null, bool wrap = false, bool clip = false)
     {
         var label = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -152,13 +150,14 @@ public static class UiKit
         return label;
     }
 
-    /// <summary>Texte « titre » (Silkscreen 8 px) : titres courts, badges, verdicts.</summary>
+    /// <summary>Texte « titre » (Bold 9 px) : titres, badges, HUD.</summary>
     public static Label Title(string text, Color? color = null, bool clip = false)
         => AsTitle(Lbl(text, color ?? Gold, clip: clip));
 
-    /// <summary>Bascule un libellé existant sur le style « titre ». <paramref name="size"/> doit rester un multiple de 8 pour rester net.</summary>
-    public static T AsTitle<T>(T label, int size = TitleSize) where T : Label
+    /// <summary>Bascule un libellé existant sur le style « titre » (Bold). <paramref name="size"/> : 9 (défaut) ou 18 pour un grand verdict.</summary>
+    public static T AsTitle<T>(T label, int size = TextSize) where T : Label
     {
+        if (size != TextSize && size != VerdictSize) throw new ArgumentOutOfRangeException(nameof(size), size, "Seules les tailles 9 et 18 sont autorisées.");
         label.AddThemeFontOverride("font", Font);
         label.AddThemeFontSizeOverride("font_size", size);
         return label;
@@ -235,9 +234,9 @@ public static class UiKit
         return row;
     }
 
-    public static Button Btn(string text, Action onPressed, float minWidth = 0)
+    public static Button Btn(string text, Action onPressed, float minWidth = 0, float height = 20)
     {
-        var button = new Button { Text = text, CustomMinimumSize = new Vector2(minWidth, 18), ClipText = false };
+        var button = new Button { Text = text, CustomMinimumSize = new Vector2(minWidth, height), ClipText = false };
         button.Pressed += onPressed;
         return button;
     }
@@ -272,7 +271,7 @@ public static class UiKit
     }
 
     /// <summary>
-    /// Texte venu de Core (journal, verdicts) : les flèches Unicode, absentes des deux polices pixel embarquées, sont rendues en ASCII
+    /// Texte venu de Core (journal, verdicts) : les flèches Unicode, absentes de Pixeloid Sans, sont rendues en ASCII
     /// (« -> ») plutôt que de dépendre d'une police système de repli, variable d'un OS à l'autre. Affichage seulement.
     /// </summary>
     public static string Plain(string text) => text.Replace("→", "->").Replace("←", "<-");

@@ -65,7 +65,7 @@ public partial class GuildHall : PanelBase
         button.Pressed += () => Shell.Show(target);
         AddChild(button);
 
-        // Une seule étiquette compacte par zone : « Nom (compteur) », police Tiny5, fond encre translucide.
+        // Une seule étiquette compacte par zone : « Nom (compteur) », Pixeloid Sans Bold 9 px, fond encre translucide.
         var plaque = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
         plaque.AddThemeStyleboxOverride("panel", PlaqueStyle(false));
         var text = UiKit.HallLbl(name, UiKit.Cream);

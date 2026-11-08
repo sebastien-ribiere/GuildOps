@@ -111,9 +111,9 @@ public partial class GameShell : Control
         _dayLabel.GetParent<Control>().TooltipText = "Jour en cours";
 
         _hud.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        _homeButton = UiKit.Btn("Hall", () => Show(View.Hall), 44);
+        _homeButton = UiKit.Btn("Hall", () => Show(View.Hall), 44, 18);
         _hud.AddChild(_homeButton);
-        _resetButton = UiKit.Btn("Recommencer", OnResetPressed, 92);
+        _resetButton = UiKit.Btn("Recommencer", OnResetPressed, 100, 18);
         _hud.AddChild(_resetButton);
     }
 
@@ -122,7 +122,7 @@ public partial class GameShell : Control
         var row = UiKit.IconText(icon, "");
         row.MouseFilter = MouseFilterEnum.Pass;
         _hud.AddChild(row);
-        return (Label)row.GetChild(1);
+        return UiKit.AsTitle((Label)row.GetChild(1)); // HUD : Bold 9 px
     }
 
     private void BuildToast()

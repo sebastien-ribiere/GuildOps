@@ -90,7 +90,9 @@ public static class Cards
         box.AddChild(center);
 
         // Spécialité + niveau (haut-gauche, style titre) ; énergie et coût (bas) : pastilles à icône, hors du visage.
-        portrait.AddChild(Chip(Names.Skill(d.Skill).ToUpperInvariant() + " " + d.Level, null, new Vector2(1, 1), title: true));
+        // « Ingénierie 3 » dépasserait du portrait (66 px) en Bold 9 px : la spécialité et le niveau sont deux pastilles superposées.
+        portrait.AddChild(Chip(Names.Skill(d.Skill), null, new Vector2(1, 1), title: true));
+        portrait.AddChild(Chip($"Niv. {d.Level}", null, new Vector2(1, 14), title: false));
         var bottom = new HBoxContainer { Position = new Vector2(1, PortraitBoxSize - 17), Size = new Vector2(PortraitBoxSize - 2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
         bottom.AddChild(Chip($"{hero.Energy}", "energy", Vector2.Zero, title: false));
         bottom.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
@@ -98,12 +100,11 @@ public static class Cards
         portrait.AddChild(bottom);
 
         // Nom : deux lignes réservées pour une grille stable ; WordSmart coupe aux espaces, aucune ellipse.
-        var name = card.Track(UiKit.Lbl(d.Name, wrap: true));
+        var name = card.Track(UiKit.AsTitle(UiKit.Lbl(d.Name, wrap: true))); // noms de héros : Bold 9 px
         name.HorizontalAlignment = HorizontalAlignment.Center;
         name.VerticalAlignment = VerticalAlignment.Top;
         name.MaxLinesVisible = 2;
-        name.AddThemeConstantOverride("line_spacing", -2); // deux lignes de 15 px : le nom entier tient sous le portrait
-        name.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 2 * UiKit.BodySize);
+        name.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 2 * UiKit.BodyFont.GetHeight(UiKit.TextSize));
         box.AddChild(name);
 
         // Engagé ⚠ > incompatible ✖ (verdict de Core) > choisi ✔ : un héros choisi mais incompatible garde son ✖.
@@ -120,8 +121,7 @@ public static class Cards
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 0);
         if (icon is not null) row.AddChild(UiKit.Icon(icon));
-        var label = UiKit.Lbl(text, UiKit.Cream);
-        if (title) UiKit.AsTitle(label);
+        var label = UiKit.AsTitle(UiKit.Lbl(text, UiKit.Cream)); // pastilles : valeurs (stats) et mentions en Bold 9 px
         label.VerticalAlignment = VerticalAlignment.Center;
         row.AddChild(label);
         chip.AddChild(row);
@@ -193,7 +193,7 @@ public static class Cards
 
     /// <summary>Pastille texte : catégorie (couleur propre) ou mention neutre (« Acceptée »).</summary>
     public static Control CategoryBadge(QuestCategory? category, string? text = null)
-        => UiKit.Pill(text ?? Names.Category(category!.Value).ToUpperInvariant(),
+        => UiKit.Pill(text ?? Names.Category(category!.Value),
             category is { } c ? Names.CategoryColor(c) : new Color(0.20f, 0.26f, 0.20f));
 
     /// <summary>Ligne de liste compacte (missions, réclamations) : titre puis sous-titre, hauteur fixe qui contient les deux lignes.</summary>
@@ -205,7 +205,7 @@ public static class Cards
         box.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         box.OffsetLeft = 6; box.OffsetRight = -22; box.OffsetTop = 2; box.OffsetBottom = -2;
         card.AddChild(box);
-        box.AddChild(card.Track(UiKit.Lbl(title, clip: true)));
+        box.AddChild(card.Track(UiKit.AsTitle(UiKit.Lbl(title, clip: true))));
         var sub = card.Track(UiKit.Lbl(subtitle, clip: true));
         box.AddChild(sub);
         card.TooltipText = $"{title}\n{subtitle}";

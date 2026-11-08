@@ -25,7 +25,7 @@ public partial class AssignmentPanel : PanelBase
         var box = new VBoxContainer();
         panel.AddChild(box);
 
-        box.AddChild(UiKit.Title("AFFECTATION"));
+        box.AddChild(UiKit.Title("Affectation"));
         _steps = new HBoxContainer();
         _steps.AddThemeConstantOverride("separation", 3);
         box.AddChild(_steps);
@@ -110,7 +110,7 @@ public partial class AssignmentPanel : PanelBase
         var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center, MouseFilter = MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 2);
         if (done) row.AddChild(UiKit.Icon("success"));
-        row.AddChild(UiKit.AsTitle(UiKit.Lbl($"{n} {text.ToUpperInvariant()}", done || current ? UiKit.Cream : UiKit.Muted)));
+        row.AddChild(UiKit.AsTitle(UiKit.Lbl($"{n} {text}", done || current ? UiKit.Cream : UiKit.Muted)));
         chip.AddChild(row);
         return chip;
     }
@@ -133,11 +133,11 @@ public partial class AssignmentPanel : PanelBase
     {
         if (check.CanAssign)
         {
-            _body.AddChild(UiKit.IconText("success", "AFFECTATION POSSIBLE", UiKit.GoodOnDark));
+            _body.AddChild(UiKit.IconText("success", "Affectation possible", UiKit.GoodOnDark));
         }
         else
         {
-            _body.AddChild(UiKit.IconText("failure", "AFFECTATION IMPOSSIBLE", UiKit.BadOnDark));
+            _body.AddChild(UiKit.IconText("failure", "Affectation impossible", UiKit.BadOnDark));
             // Un motif par ligne, tel que Core le formule (jamais fusionnés en une phrase).
             foreach (var reason in check.Reasons)
                 _body.AddChild(UiKit.IconText("warning", RefusalMessages.For(reason), UiKit.BadOnDark, wrap: true));
@@ -146,9 +146,9 @@ public partial class AssignmentPanel : PanelBase
         if (check.Chance is { } c)
         {
             var head = new HBoxContainer();
-            head.AddChild(UiKit.AsTitle(UiKit.Lbl("CHANCE DE RÉUSSITE", UiKit.Gold)));
+            head.AddChild(UiKit.AsTitle(UiKit.Lbl("Chance de réussite", UiKit.Gold)));
             head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-            head.AddChild(UiKit.AsTitle(UiKit.Lbl($"{c.Final} %", UiKit.Cream), 16));
+            head.AddChild(UiKit.AsTitle(UiKit.Lbl($"{c.Final} %", UiKit.Cream)));
             _body.AddChild(head);
             _body.AddChild(UiKit.Bar(c.Final, UiKit.Gold, new Color(0.25f, 0.20f, 0.38f)));
             _body.AddChild(UiKit.Lbl(
@@ -183,7 +183,7 @@ public partial class AssignmentPanel : PanelBase
         var head = new HBoxContainer();
         head.AddThemeConstantOverride("separation", 4);
         head.AddChild(Cards.CategoryBadge(t.Category));
-        var title = UiKit.Lbl(t.Title, UiKit.Gold, wrap: true);
+        var title = UiKit.AsTitle(UiKit.Lbl(t.Title, UiKit.Gold, wrap: true));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         _body.AddChild(head);
@@ -195,7 +195,7 @@ public partial class AssignmentPanel : PanelBase
     {
         var d = hero.Definition;
         _body.AddChild(UiKit.Divider(new Color(UiKit.Gold, 0.25f)));
-        _body.AddChild(UiKit.Lbl($"{d.Name} — {d.Role}", UiKit.Gold, wrap: true));
+        _body.AddChild(UiKit.AsTitle(UiKit.Lbl($"{d.Name} — {d.Role}", UiKit.Gold, wrap: true)));
         _body.AddChild(UiKit.Lbl($"{Names.Skill(d.Skill)} niv. {d.Level} · énergie {hero.Energy} · engagement {s.Money(d.BaseCostCopper)}" + (hero.IsFree ? "" : " · en mission"), UiKit.Cream, wrap: true));
         _body.AddChild(UiKit.RichFit(false,
             $"Trait : {d.TraitText}\n[color=#{UiKit.Hex(UiKit.GoodOnDark)}]Atout :[/color] {d.TraitAdvantage}\n[color=#{UiKit.Hex(UiKit.BadOnDark)}]Contrepartie :[/color] {d.TraitDrawback}"));

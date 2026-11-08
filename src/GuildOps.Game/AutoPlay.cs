@@ -276,7 +276,7 @@ public sealed class AutoPlay(GameShell shell)
                 if (child is Label label && label.IsVisibleInTree() && label.Text.Length > 0)
                 {
                     if (IsTruncated(label)) truncated.Add(label.Text);
-                    foreach (var ch in label.Text) if (!char.IsWhiteSpace(ch) && !label.GetThemeFont("font").HasChar(ch)) missing.Add(ch);
+                    foreach (var ch in label.Text) if (ch is not (' ' or '\n' or '\t' or '\r') && !label.GetThemeFont("font").HasChar(ch)) missing.Add(ch);
                 }
                 if (child is Button button && button.IsVisibleInTree() && button.Text.Length > 0)
                 {
@@ -285,9 +285,9 @@ public sealed class AutoPlay(GameShell shell)
                     if (wide > button.Size.X - 12) truncated.Add(button.Text);
                 }
                 if (child is Button button2 && button2.IsVisibleInTree() && button2.Text.Length > 0)
-                    foreach (var ch in button2.Text) if (!char.IsWhiteSpace(ch) && !button2.GetThemeFont("font").HasChar(ch)) missing.Add(ch);
+                    foreach (var ch in button2.Text) if (ch is not (' ' or '\n' or '\t' or '\r') && !button2.GetThemeFont("font").HasChar(ch)) missing.Add(ch);
                 if (child is RichTextLabel rich && rich.IsVisibleInTree())
-                    foreach (var ch in rich.GetParsedText()) if (!char.IsWhiteSpace(ch) && !rich.GetThemeFont("normal_font").HasChar(ch)) missing.Add(ch);
+                    foreach (var ch in rich.GetParsedText()) if (ch is not (' ' or '\n' or '\t' or '\r') && !rich.GetThemeFont("normal_font").HasChar(ch)) missing.Add(ch);
                 Walk(child);
             }
         }

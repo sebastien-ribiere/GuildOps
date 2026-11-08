@@ -1,0 +1,22 @@
+- #1 (J1) Nouvelle partie (graine 1142026) : 12 aventuriers, 12 or, réputation 35.
+- #2 (J1) Jour 1 : 4 offres publiées (palier « suspecte »).
+- #3 (J1) Fin du jour 1.
+- #4 (J2) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #5 (J2) Jour 2 : 4 offres publiées (palier « suspecte »).
+- #6 (J2) Fin du jour 2.
+- #7 (J3) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #8 (J3) Jour 3 : 4 offres publiées (palier « suspecte »).
+- #9 (J3) Fin du jour 3.
+- #10 (J4) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #11 (J4) Jour 4 : 4 offres publiées (palier « suspecte »).
+- #12 (J4) Fin du jour 4.
+- #13 (J5) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #14 (J5) Jour 5 : 4 offres publiées (palier « suspecte »).
+- #15 (J5) Fin du jour 5.
+- #16 (J6) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #17 (J6) Jour 6 : 4 offres publiées (palier « suspecte »).
+- #18 (J6) Fin du jour 6.
+- #19 (J7) Repos : chaque aventurier récupère jusqu'à 30 points d'énergie (maximum 100).
+- #20 (J7) Jour 7 : 4 offres publiées (palier « suspecte »).
+- #21 (J7) Fin du jour 7.
+- #22 (J7) Bilan inachevé : le conseil royal vous accorde un sursis (réputation 35/55, trésorerie 12 or/10 or, missions réussies 0/8). Vous pouvez recommencer.
