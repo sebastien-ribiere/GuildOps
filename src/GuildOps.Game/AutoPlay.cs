@@ -150,7 +150,7 @@ public sealed class AutoPlay(GameShell shell)
         if (_done.Add("board-selected")) await Shot("03-board-selected", View.Board);
 
         shell.Show(View.Roster);
-        if (_done.Add("roster")) { await Shot("04-roster-12-heroes", View.Roster); await Scan("Roster"); }
+        if (_done.Add("roster")) { await Shot("04-roster-12-heroes", View.Roster); await Scan("Roster"); await ShotRosterScrolled(); }
 
         // Un héros que Core refuse pour cette offre : aperçu motivé, puis tentative d'affectation refusée sans aucune mutation.
         if (s.Heroes.FirstOrDefault(h => h.Id != heroId && !s.Preview(offerId, h.Id).CanAssign) is { } refused && _done.Add("refused"))
@@ -252,6 +252,17 @@ public sealed class AutoPlay(GameShell shell)
         GD.Print($"{name} {(ok ? "OK" : "FAIL")} — {detail}");
     }
 
+    /// <summary>Capture de la grille des héros défilée en bas (3ᵉ rangée), puis retour en haut pour ne pas fausser les contrôles suivants.</summary>
+    private async Task ShotRosterScrolled()
+    {
+        var scroll = shell.GetNode<Control>("Content/Roster").FindChildren("*", "ScrollContainer", true, false).OfType<ScrollContainer>().FirstOrDefault();
+        if (scroll is null) return;
+        scroll.ScrollVertical = (int)scroll.GetVScrollBar().MaxValue;
+        await Shot("04c-roster-scrolled", View.Roster);
+        scroll.ScrollVertical = 0;
+        await Frame(2);
+    }
+
     /// <summary>Mise en page et glyphes de la vue affichée : cartes dans l'écran, textes non tronqués, glyphes présents dans la police.</summary>
     private async Task Scan(string viewName)
     {
@@ -271,7 +282,10 @@ public sealed class AutoPlay(GameShell shell)
                     cards++;
                     var rect = card.GetGlobalRect();
                     // Une carte dans une zone défilante peut dépasser volontairement ; ici aucune ne doit sortir de l'écran 640×360.
-                    if (!Screen.Encloses(rect)) outside.Add($"{card.TooltipText.Split('\n')[0]} {rect}");
+                    // Dans un ScrollContainer, seule la sortie latérale ou par le haut est une erreur ; le bas est atteint en défilant.
+                    var scrolled = node.GetParent() is ScrollContainer;
+                    var inside = scrolled ? rect.Position.X >= 0 && rect.End.X <= Screen.End.X && rect.Position.Y >= 0 : Screen.Encloses(rect);
+                    if (!inside) outside.Add($"{card.TooltipText.Split('\n')[0]} {rect}");
                 }
                 if (child is Label label && label.IsVisibleInTree() && label.Text.Length > 0)
                 {

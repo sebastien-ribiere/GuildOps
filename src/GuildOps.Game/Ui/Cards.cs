@@ -34,7 +34,6 @@ public static class Names
 public static class Cards
 {
     public const int HeroCardWidth = 104;
-    public const int HeroCardHeight = 102;
     private const int PortraitBoxSize = 66;
 
     /// <summary>Portrait 64×64 dans son cadre 72×72 (utilisé là où la place le permet : détail de mission).</summary>
@@ -65,15 +64,20 @@ public static class Cards
     }
 
     /// <summary>
-    /// Carte de héros : portrait → nom (2 lignes au besoin, jamais tronqué) → spécialité/niveau ; énergie et coût en pastilles
-    /// sur les angles du portrait (le visage reste dégagé). États : sélectionné ✔, engagé ⚠, incompatible ✖ (icône + grisé).
+    /// Carte de héros : portrait dégagé (aucune pastille dessus) → nom (2 lignes au besoin, jamais tronqué) → « Spécialité · niv. N »
+    /// → énergie à gauche, coût à droite. La grille défile verticalement (3 rangées de cette carte dépassent les 313 px disponibles).
+    /// États : sélectionné ✔, engagé ⚠, incompatible ✖ (icône + grisé).
     /// </summary>
     public static CardButton HeroCard(GameSession session, Hero hero, CardState state, string? reason)
     {
         var d = hero.Definition;
+        const int line = 12, statsH = 16;
+        var innerW = HeroCardWidth - 4;
+        var nameFont = UiKit.Font;
+        var nameLines = nameFont.GetStringSize(d.Name, HorizontalAlignment.Left, -1, UiKit.TextSize).X > innerW ? 2 : 1;
         var card = new CardButton
         {
-            CustomMinimumSize = new Vector2(HeroCardWidth, HeroCardHeight),
+            CustomMinimumSize = new Vector2(HeroCardWidth, 2 + PortraitBoxSize + nameLines * line + line + statsH + 2),
             TooltipText = $"{d.Name} — {d.Role}\n{Names.Skill(d.Skill)} niveau {d.Level}, énergie {hero.Energy}, engagement {session.Money(d.BaseCostCopper)}\nTrait : {d.TraitText}" +
                           (hero.IsFree ? "" : "\nEn mission.") + (reason is null ? "" : $"\n{reason}"),
         };
@@ -89,23 +93,30 @@ public static class Cards
         center.AddChild(portrait);
         box.AddChild(center);
 
-        // Spécialité + niveau (haut-gauche, style titre) ; énergie et coût (bas) : pastilles à icône, hors du visage.
-        // « Ingénierie 3 » dépasserait du portrait (66 px) en Bold 9 px : la spécialité et le niveau sont deux pastilles superposées.
-        portrait.AddChild(Chip(Names.Skill(d.Skill), null, new Vector2(1, 1), title: true));
-        portrait.AddChild(Chip($"Niv. {d.Level}", null, new Vector2(1, 14), title: false));
-        var bottom = new HBoxContainer { Position = new Vector2(1, PortraitBoxSize - 17), Size = new Vector2(PortraitBoxSize - 2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
-        bottom.AddChild(Chip($"{hero.Energy}", "energy", Vector2.Zero, title: false));
-        bottom.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
-        bottom.AddChild(Chip($"{d.BaseCostCopper}", "coin", Vector2.Zero, title: false));
-        portrait.AddChild(bottom);
-
-        // Nom : deux lignes réservées pour une grille stable ; WordSmart coupe aux espaces, aucune ellipse.
+        // Nom : sous le portrait, centré ; WordSmart coupe aux espaces, aucune ellipse.
         var name = card.Track(UiKit.AsTitle(UiKit.Lbl(d.Name, wrap: true))); // noms de héros : Bold 9 px
         name.HorizontalAlignment = HorizontalAlignment.Center;
         name.VerticalAlignment = VerticalAlignment.Top;
         name.MaxLinesVisible = 2;
-        name.CustomMinimumSize = new Vector2(HeroCardWidth - 8, 2 * UiKit.BodyFont.GetHeight(UiKit.TextSize));
-        box.AddChild(name);
+        name.AddThemeConstantOverride("line_spacing", line - (int)UiKit.BodyFont.GetHeight(UiKit.TextSize));
+        box.AddChild(TightRow(name, nameLines * line, innerW));
+
+        // Spécialité · niveau, sous le nom.
+        var spec = card.Track(UiKit.Lbl($"{Names.Skill(d.Skill)} · niv. {d.Level}"));
+        spec.HorizontalAlignment = HorizontalAlignment.Center;
+        box.AddChild(TightRow(spec, line, innerW));
+
+        box.AddChild(new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
+
+        // Énergie (gauche) et coût (droite), en bas de la carte.
+        var stats = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Size = new Vector2(innerW, 16) };
+        stats.AddThemeConstantOverride("separation", 0);
+        stats.AddChild(Stat(card, $"{hero.Energy}", "energy"));
+        stats.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore });
+        stats.AddChild(Stat(card, $"{d.BaseCostCopper}", "coin"));
+        var statsRow = new Control { CustomMinimumSize = new Vector2(innerW, statsH), MouseFilter = Control.MouseFilterEnum.Ignore };
+        statsRow.AddChild(stats);
+        box.AddChild(statsRow);
 
         // Engagé ⚠ > incompatible ✖ (verdict de Core) > choisi ✔ : un héros choisi mais incompatible garde son ✖.
         var marker = !hero.IsFree ? "warning" : reason is not null ? "failure" : state == CardState.Selected ? "success" : null;
@@ -113,19 +124,26 @@ public static class Cards
         return card;
     }
 
-    /// <summary>Pastille posée sur un portrait : icône optionnelle + valeur ; style titre pour les mentions en capitales.</summary>
-    private static Control Chip(string text, string? icon, Vector2 position, bool title)
+    /// <summary>Ligne de texte de hauteur fixe (pas de 12 px).</summary>
+    private static Control TightRow(Label label, int height, int width)
     {
-        var chip = new PanelContainer { Position = position, MouseFilter = Control.MouseFilterEnum.Ignore };
-        chip.AddThemeStyleboxOverride("panel", UiKit.Flat(new Color(UiKit.Ink, 0.88f), null, 0, 1));
+        var row = new Control { CustomMinimumSize = new Vector2(width, height), MouseFilter = Control.MouseFilterEnum.Ignore };
+        label.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        label.ClipText = true;
+        row.AddChild(label);
+        return row;
+    }
+
+    /// <summary>Valeur de statistique précédée de son icône 16 px.</summary>
+    private static Control Stat(CardButton card, string text, string icon)
+    {
         var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 0);
-        if (icon is not null) row.AddChild(UiKit.Icon(icon));
-        var label = UiKit.AsTitle(UiKit.Lbl(text, UiKit.Cream)); // pastilles : valeurs (stats) et mentions en Bold 9 px
+        row.AddChild(UiKit.Icon(icon));
+        var label = card.Track(UiKit.AsTitle(UiKit.Lbl(text)));
         label.VerticalAlignment = VerticalAlignment.Center;
         row.AddChild(label);
-        chip.AddChild(row);
-        return chip;
+        return row;
     }
 
     /// <summary>

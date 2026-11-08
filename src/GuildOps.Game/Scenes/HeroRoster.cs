@@ -14,7 +14,7 @@ public partial class HeroRoster : PanelBase
     {
         var root = new HBoxContainer();
         root.SetAnchorsPreset(LayoutPreset.FullRect);
-        root.OffsetLeft = 6; root.OffsetRight = -6; root.OffsetTop = 1; root.OffsetBottom = -1; // 3 × 102 + 2 × 2 = 310 px
+        root.OffsetLeft = 6; root.OffsetRight = -6; root.OffsetTop = 1; root.OffsetBottom = -1; // 313 px utiles ; la grille défile
         AddChild(root);
 
         var left = new VBoxContainer();
@@ -22,7 +22,10 @@ public partial class HeroRoster : PanelBase
         _grid = new GridContainer { Columns = 4 };
         _grid.AddThemeConstantOverride("h_separation", 2);
         _grid.AddThemeConstantOverride("v_separation", 2);
-        left.AddChild(_grid);
+        // Les cartes recomposées (portrait, nom, classe · niveau, énergie/coût) dépassent la hauteur de l'écran : la grille défile.
+        var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled, FollowFocus = true, SizeFlagsVertical = SizeFlags.ExpandFill };
+        scroll.AddChild(_grid);
+        left.AddChild(scroll);
 
         _assignment = GD.Load<PackedScene>("res://Scenes/AssignmentPanel.tscn").Instantiate<AssignmentPanel>();
         _assignment.SizeFlagsHorizontal = SizeFlags.ExpandFill;
