@@ -17,7 +17,7 @@ public sealed class AutoPlay(GameShell shell)
     private static readonly Rect2 Screen = new(0, 0, 640, 360);
     private string? _shotsDir;
     private string _policy = "first-fit";
-    private int _failures;
+    private Probe _probe = null!;
     private readonly HashSet<string> _done = [];
 
     public async Task Run()
@@ -28,6 +28,7 @@ public sealed class AutoPlay(GameShell shell)
             if (arg.StartsWith("--policy=")) _policy = arg["--policy=".Length..];
         }
         if (_shotsDir is not null) DirAccess.MakeDirRecursiveAbsolute(_shotsDir);
+        _probe = new Probe(shell, _shotsDir);
 
         var s = shell.Session;
         await Shot("01-hall", View.Hall);
@@ -48,8 +49,8 @@ public sealed class AutoPlay(GameShell shell)
         var g = s.Guild;
         GD.Print($"AUTOPLAY_RESULT policy={_policy} day={g.Day} treasury={g.TreasuryCopper} reputation={g.Reputation} succeeded={g.MissionsSucceeded} events={s.Events.Count} status={s.Status} success={s.Report?.Success}");
         WriteJournal(s);
-        GD.Print($"AUTOPLAY_FAILED_CHECKS {_failures}");
-        shell.GetTree().Quit(_failures == 0 ? 0 : 1);
+        GD.Print($"AUTOPLAY_FAILED_CHECKS {_probe.Failures}");
+        shell.GetTree().Quit(_probe.Failures == 0 ? 0 : 1);
     }
 
     /// <summary>États vides (début de partie) : missions et réclamations sans contenu, avec un message utile.</summary>
@@ -273,11 +274,7 @@ public sealed class AutoPlay(GameShell shell)
 
     // ---- Contrôles d'interface -------------------------------------------------------------------------------------------
 
-    private void Check(string name, bool ok, string detail)
-    {
-        if (!ok) _failures++;
-        GD.Print($"{name} {(ok ? "OK" : "FAIL")} — {detail}");
-    }
+    private void Check(string name, bool ok, string detail) => _probe.Check(name, ok, detail);
 
     /// <summary>Capture de la grille des héros défilée en bas (3ᵉ rangée), puis retour en haut pour ne pas fausser les contrôles suivants.</summary>
     private async Task ShotRosterScrolled()
@@ -348,43 +345,14 @@ public sealed class AutoPlay(GameShell shell)
         return font.GetStringSize(label.Text, HorizontalAlignment.Left, -1, size).X > label.Size.X + 0.5f && label.Size.X > 0;
     }
 
-    private static Button? FindButton(Node root, string textPrefix)
-    {
-        foreach (var child in root.GetChildren())
-        {
-            if (child is Button { Visible: true } b && b.IsVisibleInTree() && b.Text.StartsWith(textPrefix, StringComparison.Ordinal)) return b;
-            if (FindButton(child, textPrefix) is { } found) return found;
-        }
-        return null;
-    }
+    private static Button? FindButton(Node root, string textPrefix) => Probe.FindButton(root, textPrefix);
 
     // ---- Clavier seul -----------------------------------------------------------------------------------------------------
 
-    private async Task Frame(int count = 1)
-    {
-        for (var i = 0; i < count; i++) await shell.ToSignal(shell.GetTree(), SceneTree.SignalName.ProcessFrame);
-    }
-
-    private async Task Press(string action)
-    {
-        Input.ParseInputEvent(new InputEventAction { Action = action, Pressed = true });
-        await Frame(2);
-        Input.ParseInputEvent(new InputEventAction { Action = action, Pressed = false });
-        await Frame(1);
-    }
-
-    private Control? Focused() => shell.GetViewport().GuiGetFocusOwner();
-
-    /// <summary>Tabule (ui_focus_next) jusqu'à ce que le contrôle voulu ait le focus ; faux si le tour complet n'y mène pas.</summary>
-    private async Task<bool> TabTo(Func<Control, bool> wanted, int max = 60)
-    {
-        for (var i = 0; i < max; i++)
-        {
-            if (Focused() is { } c && wanted(c)) return true;
-            await Press("ui_focus_next");
-        }
-        return Focused() is { } last && wanted(last);
-    }
+    private Task Frame(int count = 1) => _probe.Frame(count);
+    private Task Press(string action) => _probe.Press(action);
+    private Control? Focused() => _probe.Focused();
+    private Task<bool> TabTo(Func<Control, bool> wanted, int max = 60) => _probe.TabTo(wanted, max);
 
     /// <summary>
     /// Navigation clavier : focus à l'ouverture de chaque vue, Échap vers le hall, puis un parcours complet sans souris :
@@ -527,24 +495,11 @@ public sealed class AutoPlay(GameShell shell)
     // ---- Captures ---------------------------------------------------------------------------------------------------------
 
     /// <summary>Capture de l'écran tel quel (sans navigation ni rafraîchissement : un effet en cours reste visible).</summary>
-    private async Task ShotNow(string name)
-    {
-        if (_shotsDir is null) return;
-        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var image = shell.GetViewport().GetTexture().GetImage();
-        image.Resize(image.GetWidth() * 2, image.GetHeight() * 2, Image.Interpolation.Nearest);
-        image.SavePng($"{_shotsDir}/{name}.png");
-    }
+    private Task ShotNow(string name) => _probe.ShotNow(name);
 
     private async Task Shot(string name, View view)
     {
         shell.Show(view);
-        if (_shotsDir is null) return;
-        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var image = shell.GetViewport().GetTexture().GetImage();
-        image.Resize(image.GetWidth() * 2, image.GetHeight() * 2, Image.Interpolation.Nearest);
-        image.SavePng($"{_shotsDir}/{name}.png");
+        await _probe.ShotNow(name);
     }
 }
