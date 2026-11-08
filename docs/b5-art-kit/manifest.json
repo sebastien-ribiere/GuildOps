@@ -1,0 +1,127 @@
+{
+  "license": "Original assets generated specifically for GuildOps; no external asset packs.",
+  "runtime": "Godot 4 .NET, bundled locally; no need for Python or internet at runtime.",
+  "style": "16-bit fantasy-inspired hand-authored pixel art; use Nearest filtering, no antialiasing.",
+  "sizes": {
+    "background": "640x360",
+    "portraits": "64x64",
+    "idle_strips": "128x48, four 32x48 frames",
+    "icons": "16x16",
+    "panels": "48x48 9-slice corners 8px",
+    "buttons": "128x32"
+  },
+  "heroes": [
+    {
+      "id": "jean-michel-sre",
+      "name": "Jean-Michel SRE",
+      "item": "lens",
+      "type": "engineer"
+    },
+    {
+      "id": "gerard-dev",
+      "name": "Gérard Dev",
+      "item": "hammer",
+      "type": "warrior"
+    },
+    {
+      "id": "merlinda-qa",
+      "name": "Merlinda QA",
+      "item": "book",
+      "type": "witch"
+    },
+    {
+      "id": "borborygme-release",
+      "name": "Borborygme Release",
+      "item": "seal",
+      "type": "hood"
+    },
+    {
+      "id": "archibald-platform",
+      "name": "Archibald Platform",
+      "item": "map",
+      "type": "cape"
+    },
+    {
+      "id": "prudence-productowner",
+      "name": "Prudence ProductOwner",
+      "item": "scroll",
+      "type": "noble"
+    },
+    {
+      "id": "hermine-secops",
+      "name": "Hermine SecOps",
+      "item": "lock",
+      "type": "helmet"
+    },
+    {
+      "id": "gaston-finops",
+      "name": "Gaston FinOps",
+      "item": "coin",
+      "type": "hat"
+    },
+    {
+      "id": "alice-ux",
+      "name": "Alice UX",
+      "item": "quill",
+      "type": "curly"
+    },
+    {
+      "id": "leon-dataops",
+      "name": "Léon DataOps",
+      "item": "crystal",
+      "type": "scholar"
+    },
+    {
+      "id": "zelie-cloudops",
+      "name": "Zélie CloudOps",
+      "item": "cloud",
+      "type": "cloud"
+    },
+    {
+      "id": "clovis-scrum",
+      "name": "Clovis Scrum",
+      "item": "hourglass",
+      "type": "monk"
+    }
+  ],
+  "suggestedHotspotsPixelsAt640x360": {
+    "contracts": [
+      38,
+      106,
+      144,
+      116
+    ],
+    "heroes": [
+      466,
+      104,
+      132,
+      122
+    ],
+    "treasury": [
+      504,
+      250,
+      96,
+      65
+    ],
+    "council": [
+      376,
+      218,
+      85,
+      60
+    ],
+    "portal": [
+      290,
+      276,
+      70,
+      84
+    ]
+  },
+  "phaseB5Constraints": [
+    "No new gameplay",
+    "Core remains independent of Godot",
+    "No intentional debt",
+    "Preserve current action flows",
+    "All heroes selectable",
+    "No network dependencies"
+  ]
+}
