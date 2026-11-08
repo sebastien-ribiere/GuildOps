@@ -15,7 +15,8 @@ public partial class QuestResult : PanelBase
     private Label _count = null!;
     private VBoxContainer _list = null!;
     private VBoxContainer _detail = null!;
-    private string? _animatedFor;
+    private readonly HashSet<string> _bannerAnimated = [];
+    private Control? _bannerHost;
     private readonly HashSet<string> _detailsOpen = [];
     private Button? _toggle;
 
@@ -45,6 +46,22 @@ public partial class QuestResult : PanelBase
         _detail = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _detail.AddThemeConstantOverride("separation", 4);
         detailScroll.AddChild(_detail);
+
+        // Effets cosmétiques : uniquement sur résolution effective (événement de GameShell), jamais sur Refresh/navigation.
+        Shell.MissionResolved += PlayResultFx;
+    }
+
+    /// <summary>
+    /// Succès ou échec (verdict de Core), puis récompense si une prime a réellement été versée, puis incident s'il a réellement été généré.
+    /// Purement visuel : aucune lecture de RNG, aucune mutation ; l'effet est posé à droite du bandeau de verdict, sans le masquer.
+    /// </summary>
+    private void PlayResultFx(MissionOutcome o)
+    {
+        if (!Visible || _bannerHost is not { } host || !IsInstanceValid(host) || Shell.SelectedQuestId != o.QuestId) return;
+        var sequence = new List<FxKind> { o.Success ? FxKind.Succes : FxKind.Echec };
+        if (o.RewardPaidCopper > 0) sequence.Add(FxKind.Recompense);
+        if (o.Incident is not null) sequence.Add(FxKind.Incident);
+        CosmeticFx.Attach(host, sequence);
     }
 
     public override void FocusFirst() => (FirstButton(_list) ?? FirstButton(_detail))?.GrabFocus();
@@ -104,6 +121,7 @@ public partial class QuestResult : PanelBase
     {
         UiKit.Clear(_detail);
         _toggle = null;
+        _bannerHost = null;
 
         if (s.Quests.Count == 0)
         {
@@ -130,7 +148,7 @@ public partial class QuestResult : PanelBase
         info.AddThemeConstantOverride("separation", 2);
         var titleRow = new HBoxContainer();
         titleRow.AddThemeConstantOverride("separation", 4);
-        titleRow.AddChild(Cards.CategoryBadge(t.Category));
+        titleRow.AddChild(Cards.CategoryHeader(t.Category));
         var title = UiKit.AsTitle(UiKit.Lbl(t.Title, UiKit.Ink, wrap: true));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         titleRow.AddChild(title);
@@ -141,42 +159,58 @@ public partial class QuestResult : PanelBase
         stats.AddChild(UiKit.IconText("energy", $"{t.EnergyCost}", UiKit.Ink));
         stats.AddChild(UiKit.IconText("coin", $"prime {s.Money(t.RewardCopper)}", UiKit.Ink));
         info.AddChild(stats);
+        var needs = new HBoxContainer();
+        needs.AddThemeConstantOverride("separation", 8);
+        needs.AddChild(Cards.SkillLine(t.Skill, UiKit.Ink));
+        needs.AddChild(Cards.LevelMarker(t.MinLevel, UiKit.Ink));
+        info.AddChild(needs);
         head.AddChild(info);
         _detail.AddChild(head);
-        _detail.AddChild(UiKit.Lbl(t.Description, UiKit.MutedOnLight, wrap: true));
 
-        if (selected.State == QuestState.Assigned) BuildPending(s);
-        else if (Shell.Outcomes.TryGetValue(selected.Id, out var o)) BuildOutcome(s, selected, o);
-        else _detail.AddChild(UiKit.Lbl("Mission terminée (résultat consigné au journal).", UiKit.Ink, wrap: true));
+        // Illustration HD (192×128 = 384×256 ÷ 2) à droite de la description et du verdict ; clic ou Entrée : 384×256 à l'échelle 1.
+        // Elle est neutre : jamais d'image de réussite ou d'échec avant la résolution. Les conséquences restent à gauche, en premier.
+        var middle = new HBoxContainer();
+        middle.AddThemeConstantOverride("separation", 6);
+        _detail.AddChild(middle);
+        var col = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        col.AddThemeConstantOverride("separation", 4);
+        middle.AddChild(col);
+        middle.AddChild(Cards.IllustrationButton(Shell, t, hdHalf: true));
+        col.AddChild(UiKit.Lbl(t.Description, UiKit.MutedOnLight, wrap: true));
+
+        if (selected.State == QuestState.Assigned) BuildPending(s, col);
+        else if (Shell.Outcomes.TryGetValue(selected.Id, out var o)) BuildOutcome(s, selected, o, col);
+        else col.AddChild(UiKit.Lbl("Mission terminée (résultat consigné au journal).", UiKit.Ink, wrap: true));
     }
 
-    private void BuildPending(GameSession s)
+    private void BuildPending(GameSession s, Control col)
     {
-        _detail.AddChild(Banner("En cours", "scroll", new Color(0.60f, 0.38f, 0.04f), animate: false, size: UiKit.TextSize));
-        _detail.AddChild(UiKit.Lbl("Le héros est parti. Le tirage a lieu à la résolution : aucun résultat n'est connu d'avance.", UiKit.Ink, wrap: true));
+        col.AddChild(Banner("En cours", "scroll", new Color(0.60f, 0.38f, 0.04f), animate: false, size: UiKit.TextSize));
+        col.AddChild(UiKit.Lbl("Le héros est parti. Le tirage a lieu à la résolution : aucun résultat n'est connu d'avance.", UiKit.Ink, wrap: true));
         var button = UiKit.Btn("Résoudre la mission", Shell.Resolve);
         button.Disabled = s.Status == GameStatus.Finished;
-        _detail.AddChild(button);
+        col.AddChild(button);
     }
 
-    private void BuildOutcome(GameSession s, Quest quest, MissionOutcome o)
+    private void BuildOutcome(GameSession s, Quest quest, MissionOutcome o, Control col)
     {
+        // La pose en fondu du bandeau n'a lieu qu'à la première présentation de ce résultat (jamais à la réouverture de la fiche).
         var banner = Banner(o.Success ? "SUCCÈS" : "ÉCHEC", o.Success ? "success" : "failure",
-            o.Success ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f), animate: _animatedFor != quest.Id);
-        _animatedFor = quest.Id;
-        _detail.AddChild(banner);
+            o.Success ? new Color(0.14f, 0.38f, 0.16f) : new Color(0.60f, 0.12f, 0.12f), animate: _bannerAnimated.Add(quest.Id));
+        _bannerHost = banner;
+        col.AddChild(banner);
 
         // Conséquences : récompenses et pertes en premier.
-        var grid = new GridContainer { Columns = 2 };
-        grid.AddThemeConstantOverride("h_separation", 12);
+        var grid = new GridContainer { Columns = 1 };
         grid.AddThemeConstantOverride("v_separation", 2);
         grid.AddChild(UiKit.IconText("coin", $"Prime versée : {s.Money(o.RewardPaidCopper)}", UiKit.Ink));
         grid.AddChild(UiKit.IconText("energy", $"Énergie dépensée : {o.EnergySpent}", UiKit.Ink));
         var rep = UiKit.IconText("reputation", $"Réputation {o.ReputationBefore} -> {o.ReputationAfter} ({o.ReputationDelta:+#;-#;0})",
             o.ReputationDelta > 0 ? UiKit.GoodOnLight : o.ReputationDelta < 0 ? UiKit.BadOnLight : UiKit.Ink);
         grid.AddChild(rep);
-        grid.AddChild(UiKit.Lbl(o.ReputationReason, UiKit.MutedOnLight, wrap: true));
-        _detail.AddChild(grid);
+        col.AddChild(grid);
+        // Le motif de réputation (texte de Core) passe sur toute la largeur, sous l'illustration.
+        _detail.AddChild(UiKit.Lbl(o.ReputationReason, UiKit.MutedOnLight, wrap: true));
 
         if (o.Incident is { } incident)
         {
@@ -219,7 +253,8 @@ public partial class QuestResult : PanelBase
     /// <summary>Bandeau de verdict : fond plein, icône et mot en grand. Animation purement cosmétique (opacité/échelle).</summary>
     private Control Banner(string text, string icon, Color fill, bool animate, int size = UiKit.VerdictSize)
     {
-        var banner = new PanelContainer { CustomMinimumSize = new Vector2(0, size == UiKit.VerdictSize ? 30 : 20) };
+        var banner = new PanelContainer();
+        banner.SetAnchorsPreset(LayoutPreset.FullRect);
         banner.AddThemeStyleboxOverride("panel", UiKit.Flat(fill, UiKit.Ink, 2, 3));
         var row = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         row.AddThemeConstantOverride("separation", 6);
@@ -237,6 +272,8 @@ public partial class QuestResult : PanelBase
             tween.TweenProperty(banner, "modulate:a", 1.0, 0.25);
             tween.TweenProperty(banner, "scale", Vector2.One, 0.25).SetTrans(Tween.TransitionType.Back);
         }
-        return banner;
+        var host = new Control { CustomMinimumSize = new Vector2(0, 30), SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore };
+        host.AddChild(banner);
+        return host;
     }
 }

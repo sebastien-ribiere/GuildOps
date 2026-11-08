@@ -31,12 +31,15 @@ public sealed class AutoPlay(GameShell shell)
 
         var s = shell.Session;
         await Shot("01-hall", View.Hall);
+        await AmbientChecks();
+        await ArtChecks(s);
         if (_policy == "first-fit")
         {
             await KeyboardChecks();
             shell.Reset(); // le parcours clavier a joué une mission : on repart de la graine pour que le scénario reste celui de référence
             await Frame(2);
             await EmptyStates();
+            await ViewerCheck(s);
             await FirstFit(s);
         }
         else await Reference(s);
@@ -188,19 +191,43 @@ public sealed class AutoPlay(GameShell shell)
             shell.SelectQuest(quest.Id);
             shell.Show(View.Missions);
             if (_done.Add("pending")) { await Shot("07-mission-pending", View.Missions); await Scan("Missions"); }
+            var fxBefore = CosmeticFx.Played.Count;
             shell.Resolve();
             var o = shell.Outcomes[quest.Id];
+            await Frame(8); // l'effet est en cours : on le capture réellement, avant de naviguer
+            var expected = ExpectedFx(o);
+            if (o.Success && o.Incident is null && _done.Add("fx-success")) await ShotNow("08a-fx-succes");
+            if (!o.Success && o.Incident is null && _done.Add("fx-failure")) await ShotNow("10a-fx-echec");
+            // Laisse l'enchaînement (verdict, prime, incident) se dérouler, en vérifiant qu'il se termine tout seul.
+            var last = expected.Count > 1 && o.Incident is not null && _done.Add("fx-incident");
+            for (var i = 0; i < 400 && CosmeticFx.Active > 0; i++)
+            {
+                if (last && CosmeticFx.Played.Count - fxBefore == expected.Count && CosmeticFx.Played[^1] == FxKind.Incident) { await Frame(4); await ShotNow("12a-fx-incident"); last = false; }
+                await Frame();
+            }
+            var played = CosmeticFx.Played.Skip(fxBefore).ToList();
+            Check("FX_CHECK", played.SequenceEqual(expected), $"résultat {(o.Success ? "succès" : "échec")} prime={o.RewardPaidCopper} incident={o.Incident is not null} : effets attendus [{string.Join(",", expected)}] joués [{string.Join(",", played)}]");
 
             if (_done.Add("repeat-resolve"))
             {
-                // Clic répété sur « Résoudre » + rafraîchissements : ni nouveau tirage ni mutation.
+                // Clic répété sur « Résoudre » + rafraîchissements : ni nouveau tirage, ni mutation, ni nouvel effet.
                 var before = Snapshot(s);
+                var fxCount = CosmeticFx.Played.Count;
                 shell.Resolve(); shell.Resolve(); shell.RefreshAll(); shell.Show(View.Report); shell.Show(View.Missions);
-                Check("REPEAT_RESOLVE_CHECK", before == Snapshot(s) && shell.Outcomes[quest.Id] == o, "résolution répétée et rafraîchissements : état identique");
+                Check("REPEAT_RESOLVE_CHECK", before == Snapshot(s) && shell.Outcomes[quest.Id] == o && fxCount == CosmeticFx.Played.Count, "résolution répétée, rafraîchissements et changements d'écran : état identique, aucun nouvel effet");
             }
             if (o.Success && _done.Add("success")) await DetailsShots(quest.Id, "08-mission-success", "09-mission-success-details", s);
             if (!o.Success && _done.Add("failure")) await DetailsShots(quest.Id, "10-mission-failure", "11-mission-failure-details", s);
         }
+    }
+
+    /// <summary>Effets que Core autorise pour ce résultat : verdict, prime effectivement versée, incident effectivement généré.</summary>
+    private static List<FxKind> ExpectedFx(MissionOutcome o)
+    {
+        var list = new List<FxKind> { o.Success ? FxKind.Succes : FxKind.Echec };
+        if (o.RewardPaidCopper > 0) list.Add(FxKind.Recompense);
+        if (o.Incident is not null) list.Add(FxKind.Incident);
+        return list;
     }
 
     /// <summary>Résultat replié, puis détails du calcul ouverts (même contrôle que le joueur au clavier), puis refermés.</summary>
@@ -426,7 +453,89 @@ public sealed class AutoPlay(GameShell shell)
         shell.Show(View.Hall);
     }
 
+    // ---- Art B5.2 -----------------------------------------------------------------------------------------------------------
+
+    /// <summary>Les 59 PNG du kit se chargent, aux bonnes tailles ; les 20 contrats du catalogue ont leurs deux illustrations, par identifiant.</summary>
+    private async Task ArtChecks(GameSession s)
+    {
+        var png = new List<(string path, Vector2I size)>();
+        foreach (var dir in new[] { "ambient", "categories", "levels", "quests", "quests_hd", "skills", "vfx" })
+            foreach (var f in DirAccess.GetFilesAt($"res://Assets/b5_2/{dir}").Where(f => f.EndsWith(".png"))) png.Add(($"b5_2/{dir}/{f}", Vector2I.Zero));
+        var bad = new List<string>();
+        foreach (var (path, _) in png)
+        {
+            var t = UiKit.Tex(path);
+            if (t is null || t.GetWidth() == 0) bad.Add(path);
+        }
+        Check("ASSETS_CHECK", png.Count == 59 && bad.Count == 0, $"{png.Count} PNG B5.2 chargés (59 attendus), échecs={bad.Count} {string.Join(",", bad)}");
+
+        var missing = new List<string>();
+        foreach (var t in s.Data.Templates)
+        {
+            if (Art.Thumb(t.Id) is not { } a || a.GetSize() != new Vector2(96, 64)) missing.Add(t.Id + "/96");
+            if (Art.Hd(t.Id) is not { } b || b.GetSize() != new Vector2(384, 256)) missing.Add(t.Id + "/384");
+            if (Art.HdHalf(t.Id).GetSize() != new Vector2(192, 128)) missing.Add(t.Id + "/192");
+        }
+        Check("QUEST_ART_CHECK", s.Data.Templates.Count == 20 && missing.Count == 0, $"{s.Data.Templates.Count} modèles, illustrations 96×64 / 384×256 / 192×128 trouvées par identifiant, manquantes={missing.Count} {string.Join(",", missing)}");
+        await Task.CompletedTask;
+    }
+
+    /// <summary>Hall : deux ambiances en boucle, décoratives (aucun filtre souris), qui avancent réellement et ne touchent pas aux zones cliquables.</summary>
+    private async Task AmbientChecks()
+    {
+        shell.Show(View.Hall);
+        var hall = shell.GetNode<Control>("Content/Hall");
+        var fx = hall.GetChildren().OfType<AmbientFx>().ToList();
+        var zones = hall.GetChildren().OfType<Button>().Select(b => b.GetGlobalRect()).ToList();
+        var first = fx.Select(f => ((AtlasTexture)f.Texture).Region.Position.X).ToList();
+        await Frame(40);
+        await ShotNow("01b-hall-ambient-a");
+        await Frame(25);
+        await ShotNow("01c-hall-ambient-b");
+        var later = fx.Select(f => ((AtlasTexture)f.Texture).Region.Position.X).ToList();
+        var zonesAfter = hall.GetChildren().OfType<Button>().Select(b => b.GetGlobalRect()).ToList();
+        var ok = fx.Count == 2 && fx.All(f => f.MouseFilter == Control.MouseFilterEnum.Ignore && f.FocusMode == Control.FocusModeEnum.None)
+                 && !first.SequenceEqual(later) && zones.SequenceEqual(zonesAfter) && zones.Count == 5
+                 && fx.All(f => hall.GetChildren().IndexOf(f) < hall.GetChildren().ToList().FindIndex(c => c is Button));
+        Check("AMBIENT_CHECK", ok, $"ambiances={fx.Count} frames {string.Join(",", first)} -> {string.Join(",", later)} ; 5 zones cliquables inchangées ; sous les zones et sans filtre souris");
+    }
+
+    /// <summary>Visionneuse HD : ouverture au clavier depuis le tableau, focus piégé, Échap la ferme sans quitter la vue.</summary>
+    private async Task ViewerCheck(GameSession s)
+    {
+        shell.Show(View.Board);
+        var offer = s.CurrentOffers.First(o => o.State == OfferState.Available);
+        shell.SelectOffer(offer.Id);
+        await Frame(2);
+        var snap = Snapshot(s);
+        var thumb = shell.GetNode<Control>("Content/Board").FindChildren("*", "Button", true, false).OfType<Button>().FirstOrDefault(b => b.TooltipText.Contains("illustration"));
+        var found = thumb is not null;
+        thumb?.GrabFocus();
+        await Press("ui_accept");
+        await Frame(2);
+        var open = shell.IllustrationOpen;
+        await Press("ui_focus_next");
+        var trapped = shell.GetViewport().GuiGetFocusOwner() is Button { Text: "Fermer (Échap)" };
+        await ShotNow("03c-board-illustration-hd");
+        await Press("ui_cancel");
+        await Frame(2);
+        var closed = !shell.IllustrationOpen && shell.Current == View.Board;
+        Check("VIEWER_CHECK", found && open && trapped && closed && snap == Snapshot(s), $"bouton={found} ouvert={open} focus-piégé={trapped} fermé-par-Échap-sans-quitter-la-vue={closed}, état de session inchangé");
+        shell.SelectOffer(null);
+    }
+
     // ---- Captures ---------------------------------------------------------------------------------------------------------
+
+    /// <summary>Capture de l'écran tel quel (sans navigation ni rafraîchissement : un effet en cours reste visible).</summary>
+    private async Task ShotNow(string name)
+    {
+        if (_shotsDir is null) return;
+        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await shell.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        var image = shell.GetViewport().GetTexture().GetImage();
+        image.Resize(image.GetWidth() * 2, image.GetHeight() * 2, Image.Interpolation.Nearest);
+        image.SavePng($"{_shotsDir}/{name}.png");
+    }
 
     private async Task Shot(string name, View view)
     {

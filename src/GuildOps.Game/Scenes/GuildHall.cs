@@ -38,6 +38,11 @@ public partial class GuildHall : PanelBase
         };
         AddChild(background);
 
+        // Ambiance B5.2 : deux boucles décoratives posées sur le décor (sous les sprites, les zones et les étiquettes), calées sur les points
+        // d'ancrage du décor natif ; le décalage vertical du hall (TopOffset) est appliqué à la pose.
+        AddChild(AmbientFx.Create("foyer_8x64.png", 8, 64, 64, 170, new Vector2(321, 162), TopOffset));
+        AddChild(AmbientFx.Create("tresor_8x32.png", 8, 32, 32, 140, new Vector2(498, 221), TopOffset, phase: 0.3));
+
         _sprites = new Control { MouseFilter = MouseFilterEnum.Ignore };
         AddChild(_sprites);
 
