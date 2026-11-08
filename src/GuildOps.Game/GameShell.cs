@@ -256,11 +256,15 @@ public partial class GameShell : Control
         _hud.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         _homeButton = UiKit.Btn("Hall", () => Show(View.Hall), 44, 18);
         _hud.AddChild(_homeButton);
+        // En lancement automatisé, aucune modale ne doit pouvoir s'ouvrir (même par un focus clavier mal placé ou un clic perdu) :
+        // « Aide » et « Menu » n'existent donc pas, et F1 est ignorée. Le HUD est alors identique à celui de B5.2.
         _helpButton = UiKit.Btn("Aide", OpenHelp, 36, 18);
         _helpButton.TooltipText = "Aide et règles (F1)";
+        _helpButton.Visible = !Automated;
         _hud.AddChild(_helpButton);
         _menuButton = UiKit.Btn("Menu", OpenTitle, 44, 18);
         _menuButton.TooltipText = "Retour au titre (la partie reste en mémoire)";
+        _menuButton.Visible = !Automated;
         _hud.AddChild(_menuButton);
         _resetButton = UiKit.Btn("Recommencer", OnResetPressed, 100, 18);
         _hud.AddChild(_resetButton);
@@ -306,7 +310,7 @@ public partial class GameShell : Control
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F1 } && TopOverlay is not (HelpScreen or ConfirmDialog))
+        if (@event is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F1 } && !Automated && TopOverlay is not (HelpScreen or ConfirmDialog))
         {
             OpenHelp();
             GetViewport().SetInputAsHandled();

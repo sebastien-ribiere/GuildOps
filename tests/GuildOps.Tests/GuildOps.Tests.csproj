@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Le texte de l'aide ne dépend que de Core : on le compile ici pour le tester contre une vraie GameSession, sans Godot. -->
+    <Compile Include="../../src/GuildOps.Game/Ui/HelpContent.cs" Link="Linked/HelpContent.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
